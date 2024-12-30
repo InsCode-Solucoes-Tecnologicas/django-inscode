@@ -1,5 +1,5 @@
 from uuid import UUID
-from typing import Dict
+from typing import Dict, Any
 
 from django.http import HttpRequest, JsonResponse
 
@@ -46,7 +46,7 @@ class ServiceDeleteMixin:
 class ContentTypeHandlerMixin:
     """Mixin para lidar com diferentes tipos de conteúdo."""
 
-    def parse_request_data(self, request):
+    def parse_request_data(self, request) -> Dict[str, Any]:
         if request.content_type == "application/json":
             try:
                 return json.loads(request.body)
