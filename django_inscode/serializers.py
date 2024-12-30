@@ -3,7 +3,9 @@ import uuid
 
 from decimal import Decimal
 from typing import Any, Dict, List, Type, Union, get_origin, get_args
+
 from django.db import models
+from django.db.models.fields.files import FieldFile
 
 from .transports import Transport
 
@@ -46,6 +48,9 @@ class Serializer:
             return str(value)
         if isinstance(value, (datetime.date, datetime.datetime)):
             return value.isoformat()
+
+        if isinstance(value, FieldFile):
+            return value.url if value else None
 
         origin = get_origin(field_type)
         args = get_args(field_type)
