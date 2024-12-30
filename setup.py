@@ -28,6 +28,7 @@ setup(
     install_requires=[
         "Django>=5.1",
         "django-soft-delete>=1.0.16",
+        "pytz>=2024.2",
     ],
     python_requires=">=3.12",
     classifiers=[
