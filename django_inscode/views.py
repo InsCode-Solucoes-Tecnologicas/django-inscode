@@ -139,23 +139,19 @@ class GenericModelView(GenericView):
         return serializer.serialize(obj)
 
 
-class CreateModelView(GenericModelView, mixins.CreateModelMixin):
+class CreateModelView(GenericModelView, mixins.ViewCreateModelMixin):
     """View para criar uma nova instância."""
 
 
-class RetrieveModelView(GenericModelView, mixins.RetrieveModelMixin):
-    """View para recuperar uma única instância."""
+class RetrieveModelView(GenericModelView, mixins.ViewRetrieveModelMixin):
+    """View para recuperar e listar instâncias."""
 
 
-class ListModelView(GenericModelView, mixins.ListModelMixin):
-    """View para listar instâncias."""
-
-
-class UpdateModelView(GenericModelView, mixins.UpdateModelMixin):
+class UpdateModelView(GenericModelView, mixins.ViewUpdateModelMixin):
     """View para atualizar parcialmente uma instância."""
 
 
-class DeleteModelView(GenericModelView, mixins.DeleteModelMixin):
+class DeleteModelView(GenericModelView, mixins.ViewDeleteModelMixin):
     """View para excluir uma instância."""
 
 
@@ -165,7 +161,6 @@ class ModelView(
     mixins.ViewRetrieveModelMixin,
     mixins.ViewUpdateModelMixin,
     mixins.ViewDeleteModelMixin,
-    mixins.ViewListModelMixin,
 ):
     """View para lidar com todos os métodos para um modelo."""
 

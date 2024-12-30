@@ -43,11 +43,32 @@ class ServiceDeleteMixin:
         return model_repository.delete(id)
 
 
-class ViewCreateModelMixin:
+class ContentTypeHandlerMixin:
+    """Mixin para lidar com diferentes tipos de conteúdo."""
+
+    def parse_request_data(self, request):
+        if request.content_type == "application/json":
+            try:
+                return json.loads(request.body)
+            except json.JSONDecodeError:
+                raise ValueError("JSON inválido na requisição.")
+        elif request.content_type.startswith("multipart/form-data"):
+            data = request.POST.dict()
+            files = {key: request.FILES[key] for key in request.FILES}
+            return {**data, **files}
+        else:
+            raise ValueError("Formato de conteúdo não suportado.")
+
+
+class ViewCreateModelMixin(ContentTypeHandlerMixin):
     """Mixin para ação de create em uma view."""
 
     def post(self, request: HttpRequest, *args, **kwargs) -> JsonResponse:
-        data = json.loads(request.body)
+        try:
+            data = self.parse_request_data(request)
+        except ValueError as e:
+            raise exceptions.BadRequest(errors=str(e))
+
         self.verify_fields(data)
 
         context = self.get_context(request)
@@ -57,7 +78,7 @@ class ViewCreateModelMixin:
         return JsonResponse(serialized_obj, status=201)
 
 
-class ViewReadModelMixin:
+class ViewRetrieveModelMixin:
     """Mixin para ação de leitura e listagem em uma view."""
 
     def retrieve(self, request: HttpRequest, *args, **kwargs) -> JsonResponse:
@@ -103,7 +124,7 @@ class ViewReadModelMixin:
         return self.list(request, *args, **kwargs)
 
 
-class ViewUpdateModelMixin:
+class ViewUpdateModelMixin(ContentTypeHandlerMixin):
     """Mixin para atualizar parcialmente uma instância em uma view."""
 
     def _update(self, request: HttpRequest, *args, **kwargs) -> JsonResponse:
@@ -111,8 +132,11 @@ class ViewUpdateModelMixin:
 
         if not obj_id:
             raise exceptions.BadRequest("Nenhum identificador especificado.")
+        try:
+            data = self.parse_request_data(request)
+        except ValueError as e:
+            raise exceptions.BadRequest(errors=str(e))
 
-        data = json.loads(request.body)
         context = self.get_context()
         obj = self.service.perform_action("update", obj_id, data=data, context=context)
         serialized_obj = self.serialize_object(obj)
