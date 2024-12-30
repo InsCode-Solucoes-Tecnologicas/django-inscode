@@ -1,4 +1,4 @@
-import mixins
+from . import mixins
 from .repositories import Repository
 
 from typing import TypeVar, Dict
