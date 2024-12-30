@@ -76,7 +76,7 @@ class ViewCreateModelMixin(ContentTypeHandlerMixin):
         self.verify_fields(data)
 
         context = self.get_context(request)
-        obj = self.service.perfom_action("create", data=data, context=context)
+        obj = self.service.perform_action("create", data=data, context=context)
         serialized_obj = self.serialize_object(obj)
 
         return JsonResponse(serialized_obj, status=201)
