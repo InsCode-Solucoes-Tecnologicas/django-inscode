@@ -4,7 +4,8 @@ from typing import Dict, Any, TypeVar
 from django.http import HttpRequest, JsonResponse
 from django.db.models import QuerySet, Model
 
-import exceptions
+from . import exceptions
+
 import json
 
 t_model = TypeVar("t_model", bound=Model)

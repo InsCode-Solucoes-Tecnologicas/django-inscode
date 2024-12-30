@@ -4,9 +4,9 @@ from django.http import HttpRequest, JsonResponse
 
 from typing import Set, Dict, Any, Optional, List, TypeVar, Type, Union
 
-import mixins
-import exceptions
-import settings
+from . import mixins
+from . import exceptions
+from . import settings
 
 from .permissions import BasePermission
 from .services import GenericModelService, OrchestratorService
