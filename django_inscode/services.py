@@ -105,8 +105,8 @@ class ModelService(
             return self.read(*args, context=context)
         elif action == "list_all":
             return self.list_all(context=context)
-        elif action == "filter":
-            return self.filter(context=context, **filter_kwargs)
+        elif action == "list":
+            return self.list(context=context, **filter_kwargs)
         elif action == "update":
             instance = self.read(*args, context=context)
             self.validate(data, instance=instance)

@@ -181,7 +181,7 @@ class GenericModelView(GenericView):
         context = self.get_context(self.request)
 
         return self.service.perform_action(
-            "filter", filter_kwargs=filter_kwargs, context=context
+            "list", filter_kwargs=filter_kwargs, context=context
         )
 
     def paginate_queryset(self, queryset, page_number):
