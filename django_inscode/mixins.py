@@ -1,16 +1,19 @@
 from uuid import UUID
-from typing import Dict, Any
+from typing import Dict, Any, TypeVar
 
 from django.http import HttpRequest, JsonResponse
+from django.db.models import QuerySet, Model
 
 import exceptions
 import json
+
+t_model = TypeVar("t_model", bound=Model)
 
 
 class ServiceCreateMixin:
     """Mixin para criar instâncias de um modelo em um serviço"""
 
-    def create(self, data: Dict, context: Dict):
+    def create(self, data: Dict, context: Dict) -> t_model:
         model_repository = self.get_model_repository()
         return model_repository.create(**data)
 
@@ -18,11 +21,11 @@ class ServiceCreateMixin:
 class ServiceReadMixin:
     """Mixin para ler instâncias de um modelo em um serviço"""
 
-    def read(self, id: UUID | int, context: Dict):
+    def read(self, id: UUID | int, context: Dict) -> t_model:
         model_repository = self.get_model_repository()
         return model_repository.read(id)
 
-    def list(self, context: Dict, **kwargs):
+    def list(self, context: Dict, **kwargs) -> QuerySet[t_model]:
         model_repository = self.get_model_repository()
         return model_repository.filter(**kwargs)
 
@@ -30,7 +33,7 @@ class ServiceReadMixin:
 class ServiceUpdateMixin:
     """Mixin para atualizar instâncias de um modelo em um serviço"""
 
-    def update(self, id: UUID | int, data: Dict, context: Dict):
+    def update(self, id: UUID | int, data: Dict, context: Dict) -> t_model:
         model_repository = self.get_model_repository()
         return model_repository.update(id, **data)
 
@@ -38,7 +41,7 @@ class ServiceUpdateMixin:
 class ServiceDeleteMixin:
     """Mixin para excluir instâncias de um modelo em um serviço"""
 
-    def delete(self, id: UUID | int, context: Dict):
+    def delete(self, id: UUID | int, context: Dict) -> None:
         model_repository = self.get_model_repository()
         return model_repository.delete(id)
 

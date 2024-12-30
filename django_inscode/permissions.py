@@ -1,3 +1,5 @@
+from typing import Optional
+
 SAFE_METHODS = ("GET", "HEAD", "OPTIONS")
 
 
@@ -104,20 +106,22 @@ class BasePermissionMetaclass(OperationHolderMixin, type):
 
 class BasePermission(metaclass=BasePermissionMetaclass):
     """
-    Classe base para permissões
+    Classe base para permissões.
     """
 
-    def has_permission(self, request, view):
+    message: Optional[str] = "Permissão negada."
+
+    def has_permission(self, request, view) -> bool:
         return True
 
-    def has_object_permission(self, request, view, obj):
+    def has_object_permission(self, request, view, obj) -> bool:
         return True
 
 
 class IsAuthenticated(BasePermission):
     """
-    Permissão para autorizar usuários autenticados
+    Permissão para autorizar usuários autenticados.
     """
 
-    def has_permission(self, request, view):
+    def has_permission(self, request, view) -> bool:
         return bool(request.user and request.user.is_authenticated)

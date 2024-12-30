@@ -73,14 +73,10 @@ class GenericView(View):
         """
         for permission in self.get_permissions():
             if not permission.has_permission(request, self):
-                raise exceptions.Forbidden(
-                    "Você não tem permissão para acessar este recurso."
-                )
+                raise exceptions.Forbidden(message=permission.message)
 
             if obj and not permission.has_object_permission(request, self, obj):
-                raise exceptions.Forbidden(
-                    "Você não tem permissão para acessar este objeto."
-                )
+                raise exceptions.Forbidden(message=permission.message)
 
     def dispatch(self, request, *args, **kwargs):
         """
