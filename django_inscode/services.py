@@ -96,21 +96,22 @@ class ModelService(
         """
         data = kwargs.get("data", {})
         filter_kwargs = kwargs.get("filter_kwargs", {})
+        context = kwargs.get("context", {})
 
         if action == "create":
             self.validate(data)
-            return self.create(data)
+            return self.create(data, context)
         elif action == "read":
-            return self.read(*args)
+            return self.read(*args, context=context)
         elif action == "list_all":
-            return self.list_all()
+            return self.list_all(context=context)
         elif action == "filter":
-            return self.filter(**filter_kwargs)
+            return self.filter(context=context, **filter_kwargs)
         elif action == "update":
-            instance = self.read(*args)
+            instance = self.read(*args, context=context)
             self.validate(data, instance=instance)
-            return self.update(*args, data=data)
+            return self.update(*args, data=data, context=context)
         elif action == "delete":
-            return self.delete(*args)
+            return self.delete(*args, context=context)
         else:
             raise ValueError(f"Ação desconhecida: {action}")
