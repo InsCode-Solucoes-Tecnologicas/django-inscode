@@ -164,7 +164,7 @@ class GenericModelView(GenericView):
         """Retorna o valor do campo de lookup"""
         return self.kwargs.get(self.lookup_field)
 
-    def get_object(self):
+    def get_obj(self):
         """Recupera uma instância específica."""
         lookup_value = self.get_lookup_value()
 

@@ -77,7 +77,7 @@ class Serializer:
                     continue
 
         if issubclass(field_type, Transport):
-            return Serializer(instance=type(value), transport=field_type).serialize(
+            return Serializer(model=type(value), transport=field_type).serialize(
                 instance=value
             )
 
