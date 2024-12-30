@@ -3,6 +3,7 @@ import uuid
 
 from decimal import Decimal
 from typing import Any, Dict, List, Type, Union, get_origin, get_args
+from dataclasses import fields
 
 from django.db import models
 from django.db.models.fields.files import FieldFile
@@ -18,7 +19,6 @@ class Serializer:
         self.model = model
 
     def serialize(self, instance) -> Dict[str, Any]:
-        """Transforma a instância do modelo em um dicionário baseado no transporte."""
         if not isinstance(self.transport, type) or not issubclass(
             self.transport, Transport
         ):
@@ -31,9 +31,13 @@ class Serializer:
             )
 
         serialized_data = {}
-        for field_name, field_type in self.transport.__annotations__.items():
+
+        for field in fields(self.transport):
+            field_name = field.name
+            field_type = field.type
             value = getattr(instance, field_name, None)
             serialized_data[field_name] = self._serialize_field(value, field_type)
+
         return serialized_data
 
     def _serialize_field(self, value: Any, field_type: Any) -> Any:
