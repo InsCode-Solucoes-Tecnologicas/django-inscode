@@ -26,6 +26,7 @@ class GenericView(View):
 
     service: t_service = None
     permissions_classes: List[Type[t_permission]] = None
+    fields: List[str] = []
 
     def __init__(self, **kwargs) -> None:
         super().__init__(**kwargs)
@@ -78,6 +79,15 @@ class GenericView(View):
             if obj and not permission.has_object_permission(request, self, obj):
                 raise exceptions.Forbidden(message=permission.message)
 
+    def verify_fields(self, data: Dict) -> None:
+        """Verifica se todos os campos obrigatórios estão presentes nos dados."""
+        missing_fields = set(self.get_fields()) - set(data.keys())
+
+        if missing_fields:
+            raise exceptions.BadRequest(
+                f"Campos obrigatórios faltando: {', '.join(missing_fields)}"
+            )
+
     def dispatch(self, request, *args, **kwargs):
         """
         Sobrescreve o método dispatch para verificar permissões.
@@ -112,6 +122,7 @@ class GenericOrchestratorView(GenericView, mixins.ContentTypeHandlerMixin):
         except ValueError as e:
             raise exceptions.BadRequest(errors=str(e))
 
+        self.verify_fields(data)
         context = self.get_context(request)
         service = self.get_service()
 
@@ -130,7 +141,6 @@ class GenericModelView(GenericView):
 
     serializer: t_serializer = None
     lookup_field: str = "pk"
-    fields: List[str] = []
     paginate_by: int = settings.DEFAULT_PAGINATED_BY
 
     def _validate_required_attributes(self):
@@ -149,15 +159,6 @@ class GenericModelView(GenericView):
     def get_fields(self) -> Set[str]:
         """Retorna os campos permitidos para serialização."""
         return self.fields
-
-    def verify_fields(self, data: Dict) -> None:
-        """Verifica se todos os campos obrigatórios estão presentes nos dados."""
-        missing_fields = self.get_fields() - set(data.keys())
-
-        if missing_fields:
-            raise exceptions.BadRequest(
-                f"Campos obrigatórios faltando: {', '.join(missing_fields)}"
-            )
 
     def get_lookup_value(self):
         """Retorna o valor do campo de lookup"""
