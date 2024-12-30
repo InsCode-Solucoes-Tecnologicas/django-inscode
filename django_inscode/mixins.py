@@ -141,7 +141,7 @@ class ViewUpdateModelMixin(ContentTypeHandlerMixin):
         except ValueError as e:
             raise exceptions.BadRequest(errors=str(e))
 
-        context = self.get_context()
+        context = self.get_context(request)
         obj = self.service.perform_action("update", obj_id, data=data, context=context)
         serialized_obj = self.serialize_object(obj)
 
@@ -165,7 +165,7 @@ class ViewDeleteModelMixin:
         if not obj_id:
             raise exceptions.BadRequest("Nenhum identificador especificado.")
 
-        context = self.get_context()
+        context = self.get_context(request)
         self.service.perform_action("delete", obj_id, context=context)
 
         return JsonResponse({}, status=204)
