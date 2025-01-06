@@ -61,7 +61,7 @@ class GenericView(View):
             return []
         return [permission() for permission in self.permissions_classes]
 
-    def get_obj(self):
+    def get_object(self):
         """Método para retornar o objeto atrelado à View"""
         pass
 
@@ -94,9 +94,9 @@ class GenericView(View):
         """
         self.check_permissions(request)
 
-        if hasattr(self, "get_obj") and callable(self.get_obj):
+        if hasattr(self, "get_object") and callable(self.get_object):
             try:
-                obj = self.get_obj()
+                obj = self.get_object()
                 self.check_permissions(request, obj)
             except exceptions.BadRequest:
                 pass
@@ -164,7 +164,7 @@ class GenericModelView(GenericView):
         """Retorna o valor do campo de lookup"""
         return self.kwargs.get(self.lookup_field)
 
-    def get_obj(self):
+    def get_object(self):
         """Recupera uma instância específica."""
         lookup_value = self.get_lookup_value()
 
