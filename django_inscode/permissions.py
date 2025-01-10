@@ -106,22 +106,65 @@ class BasePermissionMetaclass(OperationHolderMixin, type):
 
 class BasePermission(metaclass=BasePermissionMetaclass):
     """
-    Classe base para permissões.
+    Classe base para todas as permissões.
+
+    Esta classe define a interface padrão para verificar permissões em requisições e objetos.
+    Pode ser utilizada como base para criar regras de autorização personalizadas.
+
+    Attributes:
+        message (str): Mensagem padrão exibida quando a permissão é negada.
     """
 
     message: Optional[str] = "Permissão negada."
 
     def has_permission(self, request, view) -> bool:
+        """
+        Verifica se a requisição possui permissão para acessar a view.
+
+        Args:
+            request (HttpRequest): Objeto da requisição HTTP.
+            view (View): A view que está sendo acessada.
+
+        Returns:
+            bool: `True` se a permissão for concedida, caso contrário `False`.
+        """
         return True
 
     def has_object_permission(self, request, view, obj) -> bool:
+        """
+        Verifica se a requisição possui permissão para acessar o objeto específico.
+
+        Args:
+            request (HttpRequest): Objeto da requisição HTTP.
+            view (View): A view que está sendo acessada.
+            obj (Any): O objeto que está sendo acessado.
+
+        Returns:
+            bool: `True` se a permissão for concedida, caso contrário `False`.
+        """
         return True
 
 
 class IsAuthenticated(BasePermission):
     """
-    Permissão para autorizar usuários autenticados.
+    Permissão que autoriza apenas usuários autenticados.
+
+    Essa classe herda de `BasePermission` e implementa uma verificação para garantir
+    que o usuário esteja autenticado antes de conceder acesso.
+
+    Métodos:
+        has_permission: Verifica se o usuário está autenticado.
     """
 
     def has_permission(self, request, view) -> bool:
+        """
+        Verifica se o usuário está autenticado.
+
+        Args:
+            request (HttpRequest): Objeto da requisição HTTP.
+            view (View): A view que está sendo acessada.
+
+        Returns:
+            bool: `True` se o usuário estiver autenticado, caso contrário `False`.
+        """
         return bool(request.user and request.user.is_authenticated)

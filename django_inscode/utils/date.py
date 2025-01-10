@@ -2,7 +2,7 @@ from django.conf import settings as django_settings
 
 from datetime import datetime, date
 
-import settings
+from django_inscode import settings
 import pytz
 
 

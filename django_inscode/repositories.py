@@ -12,12 +12,34 @@ T = TypeVar("T", bound=Model)
 
 
 class Repository:
+    """
+    Repositório genérico para manipulação de modelos Django.
+
+    Esta classe fornece métodos para realizar operações CRUD (Create, Read, Update, Delete)
+    e outras interações com o banco de dados de forma genérica.
+
+    Attributes:
+        model (Model): O modelo Django associado ao repositório.
+    """
+
     def __init__(self, model: T):
+        """
+        Inicializa o repositório com o modelo Django associado.
+
+        Args:
+            model (Model): O modelo Django que será manipulado pelo repositório.
+        """
         self.model = model
 
     def _format_validation_errors(self, error: ValidationError) -> List[Dict[str, Any]]:
         """
         Formata os erros de validação do Django no formato esperado.
+
+        Args:
+            error (ValidationError): Exceção de validação capturada.
+
+        Returns:
+            List[Dict[str, Any]]: Lista de dicionários contendo os campos e mensagens de erro.
         """
         errors = []
         if hasattr(error, "error_dict"):
@@ -34,6 +56,14 @@ class Repository:
     ) -> None:
         """
         Salva a instância no banco de dados, incluindo campos ManyToMany.
+
+        Args:
+            instance (Model): Instância do modelo a ser salva.
+            many_to_many_data (Dict[str, List[Any]], optional): Dados para campos ManyToMany.
+
+        Raises:
+            BadRequest: Se houver problemas nos dados fornecidos.
+            InternalServerError: Se ocorrer um erro inesperado durante o salvamento.
         """
         with transaction.atomic():
             try:
@@ -81,6 +111,16 @@ class Repository:
     def create(self, **data) -> T:
         """
         Cria uma nova instância no banco de dados.
+
+        Args:
+            **data: Dados para criar a instância.
+
+        Returns:
+            Model: Instância criada do modelo.
+
+        Raises:
+            BadRequest: Se houver problemas nos dados fornecidos.
+            InternalServerError: Se ocorrer um erro inesperado durante a criação.
         """
         many_to_many_data = {}
 
@@ -98,7 +138,16 @@ class Repository:
 
     def read(self, id: UUID | int) -> T:
         """
-        Busca uma instância existente no banco de dados via id.
+        Busca uma instância existente no banco de dados via ID.
+
+        Args:
+            id (UUID | int): Identificador da instância.
+
+        Returns:
+            Model: Instância encontrada do modelo.
+
+        Raises:
+            NotFound: Se a instância não for encontrada.
         """
         try:
             instance = self.model.objects.get(id=id)
@@ -108,7 +157,19 @@ class Repository:
 
     def update(self, id: UUID | int, **data) -> T:
         """
-        Atualiza a instância de um modelo com base nos dados fornecidos.
+        Atualiza os dados de uma instância existente no banco de dados.
+
+        Args:
+            id (UUID | int): Identificador da instância.
+            **data: Dados atualizados para a instância.
+
+        Returns:
+            Model: Instância atualizada do modelo.
+
+        Raises:
+            BadRequest: Se houver problemas nos dados fornecidos.
+            NotFound: Se a instância não for encontrada.
+            InternalServerError: Se ocorrer um erro inesperado durante a atualização.
         """
         instance = self.read(id)
 
@@ -159,6 +220,16 @@ class Repository:
         return instance
 
     def delete(self, id: UUID | int) -> None:
+        """
+        Exclui uma instância existente no banco de dados via ID.
+
+        Args:
+            id (UUID | int): Identificador da instância a ser excluída.
+
+        Raises:
+            NotFound: Se a instância não for encontrada.
+            InternalServerError: Se ocorrer um erro inesperado durante a exclusão.
+        """
         instance = self.read(id)
 
         with transaction.atomic():
@@ -169,12 +240,21 @@ class Repository:
 
     def list_all(self) -> QuerySet[T]:
         """
-        Retorna todas as instâncias de um modelo.
+        Retorna todas as instâncias do modelo associadas ao repositório.
+
+        Returns:
+            QuerySet[T]: Conjunto de resultados contendo todas as instâncias do modelo.
         """
         return self.model.objects.all()
 
     def filter(self, **kwargs) -> QuerySet[T]:
         """
-        Retorna todas as instâncias do modelo que atendem ao filtro.
+        Retorna todas as instâncias do modelo que atendem aos critérios de filtro fornecidos.
+
+        Args:
+            **kwargs: Argumentos de filtro para a consulta.
+
+        Returns:
+            QuerySet[T]: Conjunto de resultados contendo as instâncias que atendem aos filtros.
         """
         return self.model.objects.filter(**kwargs)

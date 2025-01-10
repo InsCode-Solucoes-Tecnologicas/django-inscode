@@ -6,7 +6,13 @@ from uuid import uuid4
 
 class BaseModel(models.Model):
     """
-    Modelo base contendo um id no formato uuid4 como chave primária.
+    Modelo base abstrato que fornece um campo `id` como chave primária no formato UUID.
+
+    Este modelo é utilizado como base para outros modelos, garantindo que cada instância
+    tenha um identificador único gerado automaticamente.
+
+    Attributes:
+        id (UUIDField): Campo de chave primária gerado automaticamente no formato UUID.
     """
 
     id = models.UUIDField(primary_key=True, blank=True, default=uuid4, editable=False)
@@ -17,8 +23,16 @@ class BaseModel(models.Model):
 
 class SoftDeleteBaseModel(SoftDeleteModel):
     """
-    Modelo base contendo um id no formato uuid4 como chave primária. Além disso este
-    modelo não pode ser excluído do banco de dados permanentemente.
+    Modelo base abstrato que fornece um campo `id` como chave primária no formato UUID e suporte a exclusão lógica.
+
+    Este modelo é utilizado como base para outros modelos que requerem exclusão lógica,
+    ou seja, os registros não são removidos permanentemente do banco de dados.
+
+    Attributes:
+        id (UUIDField): Campo de chave primária gerado automaticamente no formato UUID.
+
+    Inherits:
+        SoftDeleteModel: Implementa a funcionalidade de exclusão lógica.
     """
 
     id = models.UUIDField(primary_key=True, blank=True, default=uuid4, editable=False)
