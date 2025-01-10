@@ -7,7 +7,6 @@ from dataclasses import fields
 
 from django.db import models
 from django.db.models.fields.files import FieldFile
-from django.db.models.fields.related import RelatedField
 from django.db.models.fields.reverse_related import ForeignObjectRel
 
 from .transports import Transport
@@ -78,14 +77,6 @@ class Serializer:
                     for rel_instance in related_manager.all()
                 ]
 
-            elif isinstance(related_field, RelatedField):
-                related_name = related_field.name
-                value = getattr(instance, related_name, None)
-                if value is not None:
-                    serialized_data[related_name] = self._serialize_field(
-                        value, type(value)
-                    )
-
         return serialized_data
 
     def _serialize_field(self, value: Any, field_type: Any) -> Any:
@@ -140,7 +131,7 @@ class Serializer:
                 except Exception:
                     continue
 
-        if issubclass(field_type, Transport):
+        if isinstance(value, models.Model) and issubclass(field_type, Transport):
             return Serializer(model=type(value), transport=field_type).serialize(
                 instance=value
             )
