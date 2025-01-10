@@ -22,6 +22,14 @@ t_service = Union[t_generic_model_service, t_orchestrator_service]
 class GenericView(View):
     """
     Classe base genérica para views que compartilham lógica comum.
+
+    Esta classe fornece métodos e atributos genéricos para gerenciar permissões,
+    serviços e validações, servindo como base para outras views.
+
+    Attributes:
+        service (t_service): Serviço associado à view.
+        permissions_classes (List[Type[t_permission]]): Lista de classes de permissão.
+        fields (List[str]): Lista de campos permitidos na view.
     """
 
     service: t_service = None
@@ -29,11 +37,22 @@ class GenericView(View):
     fields: List[str] = []
 
     def __init__(self, **kwargs) -> None:
+        """
+        Inicializa a view e valida os atributos obrigatórios.
+
+        Args:
+            **kwargs: Argumentos adicionais para inicialização.
+        """
         super().__init__(**kwargs)
         self._validate_required_attributes()
 
     def _validate_required_attributes(self) -> None:
-        """Valida se os atributos obrigatórios foram definidos."""
+        """
+        Valida se os atributos obrigatórios foram definidos.
+
+        Raises:
+            ImproperlyConfigured: Se algum atributo obrigatório estiver ausente.
+        """
         required_attributes = {"service"}
         missing_attributes = [
             attr for attr in required_attributes if not getattr(self, attr)
@@ -46,16 +65,32 @@ class GenericView(View):
             )
 
     def get_service(self) -> t_service:
-        """Retorna o serviço associado."""
+        """
+        Retorna o serviço associado à view.
+
+        Returns:
+            t_service: Serviço associado.
+        """
         return self.service
 
     def get_context(self, request) -> Dict[str, Any]:
-        """Retorna o contexto adicional para operações no serviço."""
+        """
+        Retorna o contexto adicional para operações no serviço.
+
+        Args:
+            request (HttpRequest): Objeto da requisição HTTP.
+
+        Returns:
+            Dict[str, Any]: Contexto adicional com informações do usuário e sessão.
+        """
         return {"user": request.user, "session": request.session}
 
     def get_permissions(self) -> List[BasePermission]:
         """
         Instancia e retorna as classes de permissão configuradas.
+
+        Returns:
+            List[BasePermission]: Lista de instâncias das classes de permissão.
         """
         if not self.permissions_classes:
             return []
@@ -69,8 +104,12 @@ class GenericView(View):
         """
         Verifica se todas as permissões são concedidas.
 
-        Sempre verifica `has_permission`.
-        Se um objeto for fornecido, também verifica `has_object_permission`.
+        Args:
+            request (HttpRequest): Objeto da requisição HTTP.
+            obj (Any, optional): Objeto específico para verificar permissões de objeto.
+
+        Raises:
+            exceptions.Forbidden: Se alguma permissão for negada.
         """
         for permission in self.get_permissions():
             if not permission.has_permission(request, self):
@@ -90,7 +129,18 @@ class GenericView(View):
 
     def dispatch(self, request, *args, **kwargs):
         """
-        Sobrescreve o método dispatch para verificar permissões.
+        Sobrescreve o método dispatch para verificar permissões antes de processar a requisição.
+
+        Args:
+            request (HttpRequest): Objeto da requisição HTTP.
+            *args: Argumentos posicionais adicionais.
+            **kwargs: Argumentos nomeados adicionais.
+
+        Returns:
+            HttpResponse: Resposta processada pela view.
+
+        Raises:
+            exceptions.Forbidden: Se as permissões forem negadas.
         """
         self.check_permissions(request)
 
@@ -107,15 +157,33 @@ class GenericView(View):
 class GenericOrchestratorView(GenericView, mixins.ContentTypeHandlerMixin):
     """
     Classe base para views que lidam com lógica orquestrada.
-    Utiliza serviços orquestradores para executar operações complexas.
+
+    Utiliza serviços orquestradores para executar operações complexas que envolvem múltiplos
+    repositórios ou lógicas de negócio avançadas.
+
+    Attributes:
+        service (t_orchestrator_service): Serviço orquestrador associado à view.
+        permissions_classes (List[Type[t_permission]]): Lista de classes de permissão.
+        fields (List[str]): Lista de campos permitidos na view.
     """
 
     service: t_orchestrator_service = None
 
     def execute(self, request: HttpRequest, *args, **kwargs) -> JsonResponse:
         """
-        Método principal para executar a lógica orquestrada.
-        Delegado ao serviço orquestrador.
+        Método principal para executar a lógica orquestrada delegada ao serviço orquestrador.
+
+        Args:
+            request (HttpRequest): Objeto da requisição HTTP.
+            *args: Argumentos posicionais adicionais.
+            **kwargs: Argumentos nomeados adicionais.
+
+        Returns:
+            JsonResponse: Resposta JSON contendo o resultado da operação.
+
+        Raises:
+            exceptions.BadRequest: Se os dados enviados forem inválidos.
+            exceptions.Forbidden: Se as permissões forem negadas.
         """
         try:
             data = self.parse_request_data(request)
@@ -137,6 +205,18 @@ class GenericOrchestratorView(GenericView, mixins.ContentTypeHandlerMixin):
 class GenericModelView(GenericView):
     """
     Classe base genérica que combina mixins para criar views RESTful.
+
+    Esta classe fornece funcionalidades para manipular modelos Django de forma padronizada,
+    incluindo suporte para serialização, paginação e operações CRUD (Create, Read, Update, Delete).
+    É projetada para ser estendida por outras views que necessitam de lógica específica.
+
+    Attributes:
+        serializer (t_serializer): Classe de serializador associada à view.
+        lookup_field (str): Nome do campo usado para identificar instâncias específicas. Default é "pk".
+        paginate_by (int): Número de itens por página para paginação. Default é definido em `settings.DEFAULT_PAGINATED_BY`.
+        service (t_service): Serviço associado à view.
+        permissions_classes (List[Type[t_permission]]): Lista de classes de permissão.
+        fields (List[str]): Lista de campos permitidos na view.
     """
 
     serializer: t_serializer = None
@@ -144,7 +224,14 @@ class GenericModelView(GenericView):
     paginate_by: int = settings.DEFAULT_PAGINATED_BY
 
     def _validate_required_attributes(self):
-        """Valida se os atributos obrigatórios foram definidos."""
+        """
+        Valida se os atributos obrigatórios foram definidos.
+
+        Atributos obrigatórios incluem `service` e `serializer`.
+
+        Raises:
+            ImproperlyConfigured: Se algum atributo obrigatório estiver ausente.
+        """
         required_attributes = {"service", "serializer"}
         missing_attributes = [
             attr for attr in required_attributes if not getattr(self, attr)
@@ -157,15 +244,34 @@ class GenericModelView(GenericView):
             )
 
     def get_fields(self) -> Set[str]:
-        """Retorna os campos permitidos para serialização."""
+        """
+        Retorna os campos obrigatórios para requisições de criação.
+
+        Returns:
+            Set[str]: Conjunto de nomes dos campos permitidos.
+        """
         return self.fields
 
     def get_lookup_value(self):
-        """Retorna o valor do campo de lookup"""
+        """
+        Retorna o valor do campo de lookup usado para identificar uma instância específica.
+
+        Returns:
+            Any: Valor do campo de lookup obtido dos argumentos da URL.
+        """
         return self.kwargs.get(self.lookup_field)
 
     def get_object(self):
-        """Recupera uma instância específica."""
+        """
+        Recupera uma instância específica do modelo com base no campo de lookup.
+
+        Returns:
+            Model: Instância do modelo correspondente ao valor de lookup.
+
+        Raises:
+            exceptions.BadRequest: Se nenhum identificador for especificado.
+            exceptions.NotFound: Se o objeto não for encontrado.
+        """
         lookup_value = self.get_lookup_value()
 
         if not lookup_value:
@@ -176,7 +282,15 @@ class GenericModelView(GenericView):
         return self.service.perform_action("read", lookup_value, context=context)
 
     def get_queryset(self, filter_kwargs: Optional[Dict[str, Any]] = None):
-        """Retorna o queryset filtrado."""
+        """
+        Retorna o queryset filtrado com base nos argumentos fornecidos.
+
+        Args:
+            filter_kwargs (Optional[Dict[str, Any]]): Dicionário contendo filtros opcionais.
+
+        Returns:
+            QuerySet: Queryset filtrado com base nos critérios fornecidos.
+        """
         filter_kwargs = filter_kwargs or {}
 
         context = self.get_context(self.request)
@@ -186,7 +300,19 @@ class GenericModelView(GenericView):
         )
 
     def paginate_queryset(self, queryset, page_number):
-        """Paginação básica do queryset."""
+        """
+        Realiza a paginação básica do queryset com base no número da página.
+
+        Args:
+            queryset (QuerySet): Queryset a ser paginado.
+            page_number (int): Número da página desejada.
+
+        Returns:
+            QuerySet: Subconjunto do queryset correspondente à página solicitada.
+
+        Raises:
+            ValueError: Se o número da página for inválido.
+        """
 
         start = (page_number - 1) * self.paginate_by
         end = start + self.paginate_by
@@ -194,27 +320,82 @@ class GenericModelView(GenericView):
         return queryset[start:end]
 
     def get_serializer(self):
+        """
+        Retorna a classe de serializador associada à view.
+
+        Returns:
+            Serializer: Instância da classe de serializador configurada.
+
+        Raises:
+            ImproperlyConfigured: Se o atributo `serializer` não estiver definido.
+        """
         return self.serializer
 
     def serialize_object(self, obj):
+        """
+        Serializa uma instância do modelo usando o serializador configurado.
+
+        Args:
+            obj (Model): Instância do modelo a ser serializada.
+
+        Returns:
+            Dict[str, Any]: Dicionário contendo os dados serializados da instância.
+
+        Raises:
+            ValueError: Se ocorrer um erro durante a serialização.
+        """
         serializer = self.get_serializer()
         return serializer.serialize(obj)
 
 
 class CreateModelView(GenericModelView, mixins.ViewCreateModelMixin):
-    """View para criar uma nova instância."""
+    """
+    View para criar uma nova instância.
+
+    Attributes:
+        serializer (t_serializer): Classe de serializador associada à view.
+        service (t_service): Serviço associado à view.
+        permissions_classes (List[Type[t_permission]]): Lista de classes de permissão.
+        fields (List[str]): Lista de campos permitidos na view.
+    """
 
 
 class RetrieveModelView(GenericModelView, mixins.ViewRetrieveModelMixin):
-    """View para recuperar e listar instâncias."""
+    """
+    View para recuperar e listar instâncias.
+
+    Attributes:
+        serializer (t_serializer): Classe de serializador associada à view.
+        lookup_field (str): Nome do campo usado para identificar instâncias específicas. Default é "pk".
+        paginate_by (int): Número de itens por página para paginação. Default é definido em `settings.DEFAULT_PAGINATED_BY`.
+        service (t_service): Serviço associado à view.
+        permissions_classes (List[Type[t_permission]]): Lista de classes de permissão.
+    """
 
 
 class UpdateModelView(GenericModelView, mixins.ViewUpdateModelMixin):
-    """View para atualizar parcialmente uma instância."""
+    """
+    View para atualizar parcialmente uma instância.
+
+    Attributes:
+        serializer (t_serializer): Classe de serializador associada à view.
+        lookup_field (str): Nome do campo usado para identificar instâncias específicas. Default é "pk".
+        service (t_service): Serviço associado à view.
+        permissions_classes (List[Type[t_permission]]): Lista de classes de permissão.
+        fields (List[str]): Lista de campos permitidos na view.
+    """
 
 
 class DeleteModelView(GenericModelView, mixins.ViewDeleteModelMixin):
-    """View para excluir uma instância."""
+    """
+    View para excluir uma instância.
+
+    Attributes:
+        serializer (t_serializer): Classe de serializador associada à view.
+        lookup_field (str): Nome do campo usado para identificar instâncias específicas. Default é "pk".
+        service (t_service): Serviço associado à view.
+        permissions_classes (List[Type[t_permission]]): Lista de classes de permissão.
+    """
 
 
 class ModelView(
@@ -224,6 +405,22 @@ class ModelView(
     mixins.ViewUpdateModelMixin,
     mixins.ViewDeleteModelMixin,
 ):
-    """View para lidar com todos os métodos para um modelo."""
+    """
+    View que combina todas as operações CRUD em um único endpoint.
+
+    Esta classe fornece suporte completo para criar, ler (listar e recuperar),
+    atualizar e excluir instâncias de um modelo Django. É ideal para casos simples
+    onde a lógica CRUD básica é suficiente.
+
+    Métodos herdados incluem validação de campos, paginação e serialização automática.
+
+    Attributes:
+        serializer (t_serializer): Classe de serializador associada à view.
+        lookup_field (str): Nome do campo usado para identificar instâncias específicas. Default é "pk".
+        paginate_by (int): Número de itens por página para paginação. Default é definido em `settings.DEFAULT_PAGINATED_BY`.
+        service (t_service): Serviço associado à view.
+        permissions_classes (List[Type[t_permission]]): Lista de classes de permissão.
+        fields (List[str]): Lista de campos permitidos na view.
+    """
 
     pass

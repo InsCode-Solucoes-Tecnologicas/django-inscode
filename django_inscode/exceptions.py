@@ -1,6 +1,12 @@
 class APIException(Exception):
     """
     Classe base para todas as exceções personalizadas.
+
+    Attributes:
+        status_code (int): Código de status HTTP associado à exceção.
+        default_message (str): Mensagem padrão da exceção.
+        message (str): Mensagem personalizada da exceção.
+        errors (list): Lista de erros específicos associados à exceção.
     """
 
     status_code = 500
@@ -8,9 +14,12 @@ class APIException(Exception):
 
     def __init__(self, message=None, status_code=None, errors=None):
         """
-        :param message: Mensagem principal do erro.
-        :param status_code: Código HTTP.
-        :param errors: Lista de erros específicos (ex.: campos inválidos).
+        Inicializa uma instância de APIException.
+
+        Args:
+            message (str, optional): Mensagem principal do erro. Se não fornecida, será usada a mensagem padrão.
+            status_code (int, optional): Código HTTP associado ao erro. Se não fornecido, será usado o código padrão.
+            errors (list, optional): Lista de erros específicos, como campos inválidos. Se não fornecida, será uma lista vazia.
         """
         self.message = message or self.default_message
         self.status_code = status_code or self.status_code
@@ -19,6 +28,9 @@ class APIException(Exception):
     def to_dict(self):
         """
         Converte a exceção em um dicionário JSON no formato simplificado.
+
+        Returns:
+            dict: Dicionário contendo o código HTTP, a mensagem e os erros associados.
         """
         return {
             "code": self.status_code,

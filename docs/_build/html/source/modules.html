@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+
+<html lang="pt-BR" data-content_root="../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>django-inscode &#8212; Documentação django-inscode </title>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=5ecbeea2" />
+    <link rel="stylesheet" type="text/css" href="../_static/basic.css?v=686e5160" />
+    <link rel="stylesheet" type="text/css" href="../_static/alabaster.css?v=27fed22d" />
+    <script src="../_static/documentation_options.js?v=8946c2f5"></script>
+    <script src="../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/translations.js?v=71a39b36"></script>
+    <link rel="index" title="Índice" href="../genindex.html" />
+    <link rel="search" title="Buscar" href="../search.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+
+  
+  
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <section id="django-inscode">
+<h1>django-inscode<a class="headerlink" href="#django-inscode" title="Link para este cabeçalho">¶</a></h1>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="django_inscode.html">django_inscode package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="django_inscode.html#subpackages">Subpackages</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="django_inscode.utils.html">django_inscode.utils package</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="django_inscode.utils.html#submodules">Submodules</a></li>
+<li class="toctree-l4"><a class="reference internal" href="django_inscode.utils.html#module-django_inscode.utils.date">django_inscode.utils.date module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="django_inscode.utils.html#module-django_inscode.utils.decimal">django_inscode.utils.decimal module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="django_inscode.utils.html#module-django_inscode.utils">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="django_inscode.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="django_inscode.html#module-django_inscode.apps">django_inscode.apps module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="django_inscode.html#django_inscode.apps.DjangoInscodeConfig"><code class="docutils literal notranslate"><span class="pre">DjangoInscodeConfig</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="django_inscode.html#django_inscode.apps.DjangoInscodeConfig.name"><code class="docutils literal notranslate"><span class="pre">DjangoInscodeConfig.name</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="django_inscode.html#django_inscode.apps.DjangoInscodeConfig.verbose_name"><code class="docutils literal notranslate"><span class="pre">DjangoInscodeConfig.verbose_name</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="django_inscode.html#module-django_inscode.exceptions">django_inscode.exceptions module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="django_inscode.html#django_inscode.exceptions.APIException"><code class="docutils literal notranslate"><span class="pre">APIException</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="django_inscode.html#django_inscode.exceptions.APIException.status_code"><code class="docutils literal notranslate"><span class="pre">APIException.status_code</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="django_inscode.html#django_inscode.exceptions.APIException.default_message"><code class="docutils literal notranslate"><span class="pre">APIException.default_message</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="django_inscode.html#django_inscode.exceptions.APIException.message"><code class="docutils literal notranslate"><span class="pre">APIException.message</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="django_inscode.html#django_inscode.exceptions.APIException.errors"><code class="docutils literal notranslate"><span class="pre">APIException.errors</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="django_inscode.html#id0"><code class="docutils literal notranslate"><span class="pre">APIException.default_message</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="django_inscode.html#id1"><code class="docutils literal notranslate"><span class="pre">APIException.status_code</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="django_inscode.html#django_inscode.exceptions.APIException.to_dict"><code class="docutils literal notranslate"><span class="pre">APIException.to_dict()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="django_inscode.html#django_inscode.exceptions.BadRequest"><code class="docutils literal notranslate"><span class="pre">BadRequest</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="django_inscode.html#django_inscode.exceptions.BadRequest.default_message"><code class="docutils literal notranslate"><span class="pre">BadRequest.default_message</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="django_inscode.html#django_inscode.exceptions.BadRequest.status_code"><code class="docutils literal notranslate"><span class="pre">BadRequest.status_code</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="django_inscode.html#django_inscode.exceptions.Conflict"><code class="docutils literal notranslate"><span class="pre">Conflict</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="django_inscode.html#django_inscode.exceptions.Conflict.default_message"><code class="docutils literal notranslate"><span class="pre">Conflict.default_message</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="django_inscode.html#django_inscode.exceptions.Conflict.status_code"><code class="docutils literal notranslate"><span class="pre">Conflict.status_code</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="django_inscode.html#django_inscode.exceptions.ExpectationFailed"><code class="docutils literal notranslate"><span class="pre">ExpectationFailed</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="django_inscode.html#django_inscode.exceptions.ExpectationFailed.default_message"><code class="docutils literal notranslate"><span class="pre">ExpectationFailed.default_message</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="django_inscode.html#django_inscode.exceptions.ExpectationFailed.status_code"><code class="docutils literal notranslate"><span class="pre">ExpectationFailed.status_code</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="django_inscode.html#django_inscode.exceptions.FailedDependency"><code class="docutils literal notranslate"><span class="pre">FailedDependency</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="django_inscode.html#django_inscode.exceptions.FailedDependency.default_message"><code class="docutils literal notranslate"><span class="pre">FailedDependency.default_message</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="django_inscode.html#django_inscode.exceptions.FailedDependency.status_code"><code class="docutils literal notranslate"><span class="pre">FailedDependency.status_code</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="django_inscode.html#django_inscode.exceptions.Forbidden"><code class="docutils literal notranslate"><span class="pre">Forbidden</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="django_inscode.html#django_inscode.exceptions.Forbidden.default_message"><code class="docutils literal notranslate"><span class="pre">Forbidden.default_message</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="django_inscode.html#django_inscode.exceptions.Forbidden.status_code"><code class="docutils literal notranslate"><span class="pre">Forbidden.status_code</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="django_inscode.html#django_inscode.exceptions.Gone"><code class="docutils literal notranslate"><span class="pre">Gone</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="django_inscode.html#django_inscode.exceptions.Gone.default_message"><code class="docutils literal notranslate"><span class="pre">Gone.default_message</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="django_inscode.html#django_inscode.exceptions.Gone.status_code"><code class="docutils literal notranslate"><span class="pre">Gone.status_code</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="django_inscode.html#django_inscode.exceptions.InternalServerError"><code class="docutils literal notranslate"><span class="pre">InternalServerError</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="django_inscode.html#django_inscode.exceptions.InternalServerError.default_message"><code class="docutils literal notranslate"><span class="pre">InternalServerError.default_message</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="django_inscode.html#django_inscode.exceptions.InternalServerError.status_code"><code class="docutils literal notranslate"><span class="pre">InternalServerError.status_code</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="django_inscode.html#django_inscode.exceptions.LengthRequired"><code class="docutils literal notranslate"><span class="pre">LengthRequired</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="django_inscode.html#django_inscode.exceptions.LengthRequired.default_message"><code class="docutils literal notranslate"><span class="pre">LengthRequired.default_message</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="django_inscode.html#django_inscode.exceptions.LengthRequired.status_code"><code class="docutils literal notranslate"><span class="pre">LengthRequired.status_code</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="django_inscode.html#django_inscode.exceptions.Locked"><code class="docutils literal notranslate"><span class="pre">Locked</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="django_inscode.html#django_inscode.exceptions.Locked.default_message"><code class="docutils literal notranslate"><span class="pre">Locked.default_message</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="django_inscode.html#django_inscode.exceptions.Locked.status_code"><code class="docutils literal notranslate"><span class="pre">Locked.status_code</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="django_inscode.html#django_inscode.exceptions.MethodNotAllowed"><code class="docutils literal notranslate"><span class="pre">MethodNotAllowed</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="django_inscode.html#django_inscode.exceptions.MethodNotAllowed.default_message"><code class="docutils literal notranslate"><span class="pre">MethodNotAllowed.default_message</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="django_inscode.html#django_inscode.exceptions.MethodNotAllowed.status_code"><code class="docutils literal notranslate"><span class="pre">MethodNotAllowed.status_code</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="django_inscode.html#django_inscode.exceptions.MisdirectedRequest"><code class="docutils literal notranslate"><span class="pre">MisdirectedRequest</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="django_inscode.html#django_inscode.exceptions.MisdirectedRequest.default_message"><code class="docutils literal notranslate"><span class="pre">MisdirectedRequest.default_message</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="django_inscode.html#django_inscode.exceptions.MisdirectedRequest.status_code"><code class="docutils literal notranslate"><span class="pre">MisdirectedRequest.status_code</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="django_inscode.html#django_inscode.exceptions.NotAcceptable"><code class="docutils literal notranslate"><span class="pre">NotAcceptable</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="django_inscode.html#django_inscode.exceptions.NotAcceptable.default_message"><code class="docutils literal notranslate"><span class="pre">NotAcceptable.default_message</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="django_inscode.html#django_inscode.exceptions.NotAcceptable.status_code"><code class="docutils literal notranslate"><span class="pre">NotAcceptable.status_code</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="django_inscode.html#django_inscode.exceptions.NotFound"><code class="docutils literal notranslate"><span class="pre">NotFound</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="django_inscode.html#django_inscode.exceptions.NotFound.default_message"><code class="docutils literal notranslate"><span class="pre">NotFound.default_message</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="django_inscode.html#django_inscode.exceptions.NotFound.status_code"><code class="docutils literal notranslate"><span class="pre">NotFound.status_code</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="django_inscode.html#django_inscode.exceptions.PayloadTooLarge"><code class="docutils literal notranslate"><span class="pre">PayloadTooLarge</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="django_inscode.html#django_inscode.exceptions.PayloadTooLarge.default_message"><code class="docutils literal notranslate"><span class="pre">PayloadTooLarge.default_message</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="django_inscode.html#django_inscode.exceptions.PayloadTooLarge.status_code"><code class="docutils literal notranslate"><span class="pre">PayloadTooLarge.status_code</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="django_inscode.html#django_inscode.exceptions.PaymentRequired"><code class="docutils literal notranslate"><span class="pre">PaymentRequired</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="django_inscode.html#django_inscode.exceptions.PaymentRequired.default_message"><code class="docutils literal notranslate"><span class="pre">PaymentRequired.default_message</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="django_inscode.html#django_inscode.exceptions.PaymentRequired.status_code"><code class="docutils literal notranslate"><span class="pre">PaymentRequired.status_code</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="django_inscode.html#django_inscode.exceptions.PreconditionFailed"><code class="docutils literal notranslate"><span class="pre">PreconditionFailed</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="django_inscode.html#django_inscode.exceptions.PreconditionFailed.default_message"><code class="docutils literal notranslate"><span class="pre">PreconditionFailed.default_message</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="django_inscode.html#django_inscode.exceptions.PreconditionFailed.status_code"><code class="docutils literal notranslate"><span class="pre">PreconditionFailed.status_code</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="django_inscode.html#django_inscode.exceptions.PreconditionRequired"><code class="docutils literal notranslate"><span class="pre">PreconditionRequired</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="django_inscode.html#django_inscode.exceptions.PreconditionRequired.default_message"><code class="docutils literal notranslate"><span class="pre">PreconditionRequired.default_message</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="django_inscode.html#django_inscode.exceptions.PreconditionRequired.status_code"><code class="docutils literal notranslate"><span class="pre">PreconditionRequired.status_code</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="django_inscode.html#django_inscode.exceptions.ProxyAuthenticationRequired"><code class="docutils literal notranslate"><span class="pre">ProxyAuthenticationRequired</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="django_inscode.html#django_inscode.exceptions.ProxyAuthenticationRequired.default_message"><code class="docutils literal notranslate"><span class="pre">ProxyAuthenticationRequired.default_message</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="django_inscode.html#django_inscode.exceptions.ProxyAuthenticationRequired.status_code"><code class="docutils literal notranslate"><span class="pre">ProxyAuthenticationRequired.status_code</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="django_inscode.html#django_inscode.exceptions.RangeNotSatisfiable"><code class="docutils literal notranslate"><span class="pre">RangeNotSatisfiable</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="django_inscode.html#django_inscode.exceptions.RangeNotSatisfiable.default_message"><code class="docutils literal notranslate"><span class="pre">RangeNotSatisfiable.default_message</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="django_inscode.html#django_inscode.exceptions.RangeNotSatisfiable.status_code"><code class="docutils literal notranslate"><span class="pre">RangeNotSatisfiable.status_code</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="django_inscode.html#django_inscode.exceptions.RequestHeaderFieldsTooLarge"><code class="docutils literal notranslate"><span class="pre">RequestHeaderFieldsTooLarge</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="django_inscode.html#django_inscode.exceptions.RequestHeaderFieldsTooLarge.default_message"><code class="docutils literal notranslate"><span class="pre">RequestHeaderFieldsTooLarge.default_message</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="django_inscode.html#django_inscode.exceptions.RequestHeaderFieldsTooLarge.status_code"><code class="docutils literal notranslate"><span class="pre">RequestHeaderFieldsTooLarge.status_code</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="django_inscode.html#django_inscode.exceptions.RequestTimeout"><code class="docutils literal notranslate"><span class="pre">RequestTimeout</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="django_inscode.html#django_inscode.exceptions.RequestTimeout.default_message"><code class="docutils literal notranslate"><span class="pre">RequestTimeout.default_message</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="django_inscode.html#django_inscode.exceptions.RequestTimeout.status_code"><code class="docutils literal notranslate"><span class="pre">RequestTimeout.status_code</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="django_inscode.html#django_inscode.exceptions.TooEarly"><code class="docutils literal notranslate"><span class="pre">TooEarly</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="django_inscode.html#django_inscode.exceptions.TooEarly.default_message"><code class="docutils literal notranslate"><span class="pre">TooEarly.default_message</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="django_inscode.html#django_inscode.exceptions.TooEarly.status_code"><code class="docutils literal notranslate"><span class="pre">TooEarly.status_code</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="django_inscode.html#django_inscode.exceptions.TooManyRequests"><code class="docutils literal notranslate"><span class="pre">TooManyRequests</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="django_inscode.html#django_inscode.exceptions.TooManyRequests.default_message"><code class="docutils literal notranslate"><span class="pre">TooManyRequests.default_message</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="django_inscode.html#django_inscode.exceptions.TooManyRequests.status_code"><code class="docutils literal notranslate"><span class="pre">TooManyRequests.status_code</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="django_inscode.html#django_inscode.exceptions.URITooLong"><code class="docutils literal notranslate"><span class="pre">URITooLong</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="django_inscode.html#django_inscode.exceptions.URITooLong.default_message"><code class="docutils literal notranslate"><span class="pre">URITooLong.default_message</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="django_inscode.html#django_inscode.exceptions.URITooLong.status_code"><code class="docutils literal notranslate"><span class="pre">URITooLong.status_code</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="django_inscode.html#django_inscode.exceptions.Unauthorized"><code class="docutils literal notranslate"><span class="pre">Unauthorized</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="django_inscode.html#django_inscode.exceptions.Unauthorized.default_message"><code class="docutils literal notranslate"><span class="pre">Unauthorized.default_message</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="django_inscode.html#django_inscode.exceptions.Unauthorized.status_code"><code class="docutils literal notranslate"><span class="pre">Unauthorized.status_code</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="django_inscode.html#django_inscode.exceptions.UnavailableForLegalReasons"><code class="docutils literal notranslate"><span class="pre">UnavailableForLegalReasons</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="django_inscode.html#django_inscode.exceptions.UnavailableForLegalReasons.default_message"><code class="docutils literal notranslate"><span class="pre">UnavailableForLegalReasons.default_message</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="django_inscode.html#django_inscode.exceptions.UnavailableForLegalReasons.status_code"><code class="docutils literal notranslate"><span class="pre">UnavailableForLegalReasons.status_code</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="django_inscode.html#django_inscode.exceptions.UnprocessableEntity"><code class="docutils literal notranslate"><span class="pre">UnprocessableEntity</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="django_inscode.html#django_inscode.exceptions.UnprocessableEntity.default_message"><code class="docutils literal notranslate"><span class="pre">UnprocessableEntity.default_message</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="django_inscode.html#django_inscode.exceptions.UnprocessableEntity.status_code"><code class="docutils literal notranslate"><span class="pre">UnprocessableEntity.status_code</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="django_inscode.html#django_inscode.exceptions.UnsupportedMediaType"><code class="docutils literal notranslate"><span class="pre">UnsupportedMediaType</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="django_inscode.html#django_inscode.exceptions.UnsupportedMediaType.default_message"><code class="docutils literal notranslate"><span class="pre">UnsupportedMediaType.default_message</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="django_inscode.html#django_inscode.exceptions.UnsupportedMediaType.status_code"><code class="docutils literal notranslate"><span class="pre">UnsupportedMediaType.status_code</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="django_inscode.html#django_inscode.exceptions.UpgradeRequired"><code class="docutils literal notranslate"><span class="pre">UpgradeRequired</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="django_inscode.html#django_inscode.exceptions.UpgradeRequired.default_message"><code class="docutils literal notranslate"><span class="pre">UpgradeRequired.default_message</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="django_inscode.html#django_inscode.exceptions.UpgradeRequired.status_code"><code class="docutils literal notranslate"><span class="pre">UpgradeRequired.status_code</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="django_inscode.html#module-django_inscode.middlewares">django_inscode.middlewares module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="django_inscode.html#django_inscode.middlewares.ExceptionHandlingMiddleware"><code class="docutils literal notranslate"><span class="pre">ExceptionHandlingMiddleware</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="django_inscode.html#django_inscode.middlewares.ExceptionHandlingMiddleware.get_response"><code class="docutils literal notranslate"><span class="pre">ExceptionHandlingMiddleware.get_response</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="django_inscode.html#django_inscode.middlewares.ExceptionHandlingMiddleware.process_exception"><code class="docutils literal notranslate"><span class="pre">ExceptionHandlingMiddleware.process_exception()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="django_inscode.html#module-django_inscode.mixins">django_inscode.mixins module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="django_inscode.html#django_inscode.mixins.ContentTypeHandlerMixin"><code class="docutils literal notranslate"><span class="pre">ContentTypeHandlerMixin</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="django_inscode.html#django_inscode.mixins.ContentTypeHandlerMixin.parse_request_data"><code class="docutils literal notranslate"><span class="pre">ContentTypeHandlerMixin.parse_request_data()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="django_inscode.html#django_inscode.mixins.ServiceCreateMixin"><code class="docutils literal notranslate"><span class="pre">ServiceCreateMixin</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="django_inscode.html#django_inscode.mixins.ServiceCreateMixin.create"><code class="docutils literal notranslate"><span class="pre">ServiceCreateMixin.create()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="django_inscode.html#django_inscode.mixins.ServiceDeleteMixin"><code class="docutils literal notranslate"><span class="pre">ServiceDeleteMixin</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="django_inscode.html#django_inscode.mixins.ServiceDeleteMixin.delete"><code class="docutils literal notranslate"><span class="pre">ServiceDeleteMixin.delete()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="django_inscode.html#django_inscode.mixins.ServiceReadMixin"><code class="docutils literal notranslate"><span class="pre">ServiceReadMixin</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="django_inscode.html#django_inscode.mixins.ServiceReadMixin.list"><code class="docutils literal notranslate"><span class="pre">ServiceReadMixin.list()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="django_inscode.html#django_inscode.mixins.ServiceReadMixin.read"><code class="docutils literal notranslate"><span class="pre">ServiceReadMixin.read()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="django_inscode.html#django_inscode.mixins.ServiceUpdateMixin"><code class="docutils literal notranslate"><span class="pre">ServiceUpdateMixin</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="django_inscode.html#django_inscode.mixins.ServiceUpdateMixin.update"><code class="docutils literal notranslate"><span class="pre">ServiceUpdateMixin.update()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="django_inscode.html#django_inscode.mixins.ViewCreateModelMixin"><code class="docutils literal notranslate"><span class="pre">ViewCreateModelMixin</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="django_inscode.html#django_inscode.mixins.ViewCreateModelMixin.post"><code class="docutils literal notranslate"><span class="pre">ViewCreateModelMixin.post()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="django_inscode.html#django_inscode.mixins.ViewDeleteModelMixin"><code class="docutils literal notranslate"><span class="pre">ViewDeleteModelMixin</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="django_inscode.html#django_inscode.mixins.ViewDeleteModelMixin.delete"><code class="docutils literal notranslate"><span class="pre">ViewDeleteModelMixin.delete()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="django_inscode.html#django_inscode.mixins.ViewRetrieveModelMixin"><code class="docutils literal notranslate"><span class="pre">ViewRetrieveModelMixin</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="django_inscode.html#django_inscode.mixins.ViewRetrieveModelMixin.get"><code class="docutils literal notranslate"><span class="pre">ViewRetrieveModelMixin.get()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="django_inscode.html#django_inscode.mixins.ViewRetrieveModelMixin.list"><code class="docutils literal notranslate"><span class="pre">ViewRetrieveModelMixin.list()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="django_inscode.html#django_inscode.mixins.ViewRetrieveModelMixin.retrieve"><code class="docutils literal notranslate"><span class="pre">ViewRetrieveModelMixin.retrieve()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="django_inscode.html#django_inscode.mixins.ViewUpdateModelMixin"><code class="docutils literal notranslate"><span class="pre">ViewUpdateModelMixin</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="django_inscode.html#django_inscode.mixins.ViewUpdateModelMixin.patch"><code class="docutils literal notranslate"><span class="pre">ViewUpdateModelMixin.patch()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="django_inscode.html#django_inscode.mixins.ViewUpdateModelMixin.put"><code class="docutils literal notranslate"><span class="pre">ViewUpdateModelMixin.put()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="django_inscode.html#module-django_inscode.models">django_inscode.models module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="django_inscode.html#django_inscode.models.BaseModel"><code class="docutils literal notranslate"><span class="pre">BaseModel</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="django_inscode.html#django_inscode.models.BaseModel.id"><code class="docutils literal notranslate"><span class="pre">BaseModel.id</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="django_inscode.html#django_inscode.models.BaseModel.Meta"><code class="docutils literal notranslate"><span class="pre">BaseModel.Meta</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="django_inscode.html#id2"><code class="docutils literal notranslate"><span class="pre">BaseModel.id</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="django_inscode.html#django_inscode.models.SoftDeleteBaseModel"><code class="docutils literal notranslate"><span class="pre">SoftDeleteBaseModel</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="django_inscode.html#django_inscode.models.SoftDeleteBaseModel.id"><code class="docutils literal notranslate"><span class="pre">SoftDeleteBaseModel.id</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="django_inscode.html#django_inscode.models.SoftDeleteBaseModel.Meta"><code class="docutils literal notranslate"><span class="pre">SoftDeleteBaseModel.Meta</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="django_inscode.html#django_inscode.models.SoftDeleteBaseModel.deleted_at"><code class="docutils literal notranslate"><span class="pre">SoftDeleteBaseModel.deleted_at</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="django_inscode.html#id3"><code class="docutils literal notranslate"><span class="pre">SoftDeleteBaseModel.id</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="django_inscode.html#django_inscode.models.SoftDeleteBaseModel.restored_at"><code class="docutils literal notranslate"><span class="pre">SoftDeleteBaseModel.restored_at</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="django_inscode.html#django_inscode.models.SoftDeleteBaseModel.transaction_id"><code class="docutils literal notranslate"><span class="pre">SoftDeleteBaseModel.transaction_id</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="django_inscode.html#module-django_inscode.permissions">django_inscode.permissions module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="django_inscode.html#django_inscode.permissions.AND"><code class="docutils literal notranslate"><span class="pre">AND</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="django_inscode.html#django_inscode.permissions.AND.has_object_permission"><code class="docutils literal notranslate"><span class="pre">AND.has_object_permission()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="django_inscode.html#django_inscode.permissions.AND.has_permission"><code class="docutils literal notranslate"><span class="pre">AND.has_permission()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="django_inscode.html#django_inscode.permissions.BasePermission"><code class="docutils literal notranslate"><span class="pre">BasePermission</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="django_inscode.html#django_inscode.permissions.BasePermission.message"><code class="docutils literal notranslate"><span class="pre">BasePermission.message</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="django_inscode.html#django_inscode.permissions.BasePermission.has_object_permission"><code class="docutils literal notranslate"><span class="pre">BasePermission.has_object_permission()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="django_inscode.html#django_inscode.permissions.BasePermission.has_permission"><code class="docutils literal notranslate"><span class="pre">BasePermission.has_permission()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="django_inscode.html#id4"><code class="docutils literal notranslate"><span class="pre">BasePermission.message</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="django_inscode.html#django_inscode.permissions.BasePermissionMetaclass"><code class="docutils literal notranslate"><span class="pre">BasePermissionMetaclass</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="django_inscode.html#django_inscode.permissions.IsAuthenticated"><code class="docutils literal notranslate"><span class="pre">IsAuthenticated</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="django_inscode.html#django_inscode.permissions.IsAuthenticated.has_permission"><code class="docutils literal notranslate"><span class="pre">IsAuthenticated.has_permission()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="django_inscode.html#django_inscode.permissions.NOT"><code class="docutils literal notranslate"><span class="pre">NOT</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="django_inscode.html#django_inscode.permissions.NOT.has_object_permission"><code class="docutils literal notranslate"><span class="pre">NOT.has_object_permission()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="django_inscode.html#django_inscode.permissions.NOT.has_permission"><code class="docutils literal notranslate"><span class="pre">NOT.has_permission()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="django_inscode.html#django_inscode.permissions.OR"><code class="docutils literal notranslate"><span class="pre">OR</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="django_inscode.html#django_inscode.permissions.OR.has_object_permission"><code class="docutils literal notranslate"><span class="pre">OR.has_object_permission()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="django_inscode.html#django_inscode.permissions.OR.has_permission"><code class="docutils literal notranslate"><span class="pre">OR.has_permission()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="django_inscode.html#django_inscode.permissions.OperandHolder"><code class="docutils literal notranslate"><span class="pre">OperandHolder</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="django_inscode.html#django_inscode.permissions.OperationHolderMixin"><code class="docutils literal notranslate"><span class="pre">OperationHolderMixin</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="django_inscode.html#django_inscode.permissions.SingleOperandHolder"><code class="docutils literal notranslate"><span class="pre">SingleOperandHolder</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="django_inscode.html#module-django_inscode.repositories">django_inscode.repositories module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="django_inscode.html#django_inscode.repositories.Repository"><code class="docutils literal notranslate"><span class="pre">Repository</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="django_inscode.html#django_inscode.repositories.Repository.model"><code class="docutils literal notranslate"><span class="pre">Repository.model</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="django_inscode.html#django_inscode.repositories.Repository.create"><code class="docutils literal notranslate"><span class="pre">Repository.create()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="django_inscode.html#django_inscode.repositories.Repository.delete"><code class="docutils literal notranslate"><span class="pre">Repository.delete()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="django_inscode.html#django_inscode.repositories.Repository.filter"><code class="docutils literal notranslate"><span class="pre">Repository.filter()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="django_inscode.html#django_inscode.repositories.Repository.list_all"><code class="docutils literal notranslate"><span class="pre">Repository.list_all()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="django_inscode.html#django_inscode.repositories.Repository.read"><code class="docutils literal notranslate"><span class="pre">Repository.read()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="django_inscode.html#django_inscode.repositories.Repository.update"><code class="docutils literal notranslate"><span class="pre">Repository.update()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="django_inscode.html#module-django_inscode.serializers">django_inscode.serializers module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="django_inscode.html#django_inscode.serializers.Serializer"><code class="docutils literal notranslate"><span class="pre">Serializer</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="django_inscode.html#django_inscode.serializers.Serializer.model"><code class="docutils literal notranslate"><span class="pre">Serializer.model</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="django_inscode.html#django_inscode.serializers.Serializer.transport"><code class="docutils literal notranslate"><span class="pre">Serializer.transport</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="django_inscode.html#django_inscode.serializers.Serializer.serialize"><code class="docutils literal notranslate"><span class="pre">Serializer.serialize()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="django_inscode.html#module-django_inscode.services">django_inscode.services module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="django_inscode.html#django_inscode.services.GenericModelService"><code class="docutils literal notranslate"><span class="pre">GenericModelService</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="django_inscode.html#django_inscode.services.GenericModelService.repository"><code class="docutils literal notranslate"><span class="pre">GenericModelService.repository</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="django_inscode.html#django_inscode.services.GenericModelService.get_model_repository"><code class="docutils literal notranslate"><span class="pre">GenericModelService.get_model_repository()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="django_inscode.html#django_inscode.services.ModelService"><code class="docutils literal notranslate"><span class="pre">ModelService</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="django_inscode.html#django_inscode.services.ModelService.perform_action"><code class="docutils literal notranslate"><span class="pre">ModelService.perform_action()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="django_inscode.html#django_inscode.services.ModelService.validate"><code class="docutils literal notranslate"><span class="pre">ModelService.validate()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="django_inscode.html#django_inscode.services.OrchestratorService"><code class="docutils literal notranslate"><span class="pre">OrchestratorService</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="django_inscode.html#django_inscode.services.OrchestratorService.execute"><code class="docutils literal notranslate"><span class="pre">OrchestratorService.execute()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="django_inscode.html#module-django_inscode.settings">django_inscode.settings module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="django_inscode.html#module-django_inscode.transports">django_inscode.transports module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="django_inscode.html#django_inscode.transports.Transport"><code class="docutils literal notranslate"><span class="pre">Transport</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="django_inscode.html#django_inscode.transports.Transport.id"><code class="docutils literal notranslate"><span class="pre">Transport.id</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="django_inscode.html#id5"><code class="docutils literal notranslate"><span class="pre">Transport.id</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="django_inscode.html#module-django_inscode.views">django_inscode.views module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="django_inscode.html#django_inscode.views.CreateModelView"><code class="docutils literal notranslate"><span class="pre">CreateModelView</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="django_inscode.html#django_inscode.views.CreateModelView.serializer"><code class="docutils literal notranslate"><span class="pre">CreateModelView.serializer</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="django_inscode.html#django_inscode.views.CreateModelView.service"><code class="docutils literal notranslate"><span class="pre">CreateModelView.service</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="django_inscode.html#django_inscode.views.CreateModelView.permissions_classes"><code class="docutils literal notranslate"><span class="pre">CreateModelView.permissions_classes</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="django_inscode.html#django_inscode.views.CreateModelView.fields"><code class="docutils literal notranslate"><span class="pre">CreateModelView.fields</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="django_inscode.html#django_inscode.views.DeleteModelView"><code class="docutils literal notranslate"><span class="pre">DeleteModelView</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="django_inscode.html#django_inscode.views.DeleteModelView.serializer"><code class="docutils literal notranslate"><span class="pre">DeleteModelView.serializer</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="django_inscode.html#django_inscode.views.DeleteModelView.lookup_field"><code class="docutils literal notranslate"><span class="pre">DeleteModelView.lookup_field</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="django_inscode.html#django_inscode.views.DeleteModelView.service"><code class="docutils literal notranslate"><span class="pre">DeleteModelView.service</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="django_inscode.html#django_inscode.views.DeleteModelView.permissions_classes"><code class="docutils literal notranslate"><span class="pre">DeleteModelView.permissions_classes</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="django_inscode.html#django_inscode.views.GenericModelView"><code class="docutils literal notranslate"><span class="pre">GenericModelView</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="django_inscode.html#django_inscode.views.GenericModelView.serializer"><code class="docutils literal notranslate"><span class="pre">GenericModelView.serializer</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="django_inscode.html#django_inscode.views.GenericModelView.lookup_field"><code class="docutils literal notranslate"><span class="pre">GenericModelView.lookup_field</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="django_inscode.html#django_inscode.views.GenericModelView.paginate_by"><code class="docutils literal notranslate"><span class="pre">GenericModelView.paginate_by</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="django_inscode.html#django_inscode.views.GenericModelView.service"><code class="docutils literal notranslate"><span class="pre">GenericModelView.service</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="django_inscode.html#django_inscode.views.GenericModelView.permissions_classes"><code class="docutils literal notranslate"><span class="pre">GenericModelView.permissions_classes</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="django_inscode.html#django_inscode.views.GenericModelView.fields"><code class="docutils literal notranslate"><span class="pre">GenericModelView.fields</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="django_inscode.html#django_inscode.views.GenericModelView.get_fields"><code class="docutils literal notranslate"><span class="pre">GenericModelView.get_fields()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="django_inscode.html#django_inscode.views.GenericModelView.get_lookup_value"><code class="docutils literal notranslate"><span class="pre">GenericModelView.get_lookup_value()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="django_inscode.html#django_inscode.views.GenericModelView.get_object"><code class="docutils literal notranslate"><span class="pre">GenericModelView.get_object()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="django_inscode.html#django_inscode.views.GenericModelView.get_queryset"><code class="docutils literal notranslate"><span class="pre">GenericModelView.get_queryset()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="django_inscode.html#django_inscode.views.GenericModelView.get_serializer"><code class="docutils literal notranslate"><span class="pre">GenericModelView.get_serializer()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="django_inscode.html#id6"><code class="docutils literal notranslate"><span class="pre">GenericModelView.lookup_field</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="django_inscode.html#id7"><code class="docutils literal notranslate"><span class="pre">GenericModelView.paginate_by</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="django_inscode.html#django_inscode.views.GenericModelView.paginate_queryset"><code class="docutils literal notranslate"><span class="pre">GenericModelView.paginate_queryset()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="django_inscode.html#django_inscode.views.GenericModelView.serialize_object"><code class="docutils literal notranslate"><span class="pre">GenericModelView.serialize_object()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="django_inscode.html#id8"><code class="docutils literal notranslate"><span class="pre">GenericModelView.serializer</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="django_inscode.html#django_inscode.views.GenericOrchestratorView"><code class="docutils literal notranslate"><span class="pre">GenericOrchestratorView</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="django_inscode.html#django_inscode.views.GenericOrchestratorView.service"><code class="docutils literal notranslate"><span class="pre">GenericOrchestratorView.service</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="django_inscode.html#django_inscode.views.GenericOrchestratorView.permissions_classes"><code class="docutils literal notranslate"><span class="pre">GenericOrchestratorView.permissions_classes</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="django_inscode.html#django_inscode.views.GenericOrchestratorView.fields"><code class="docutils literal notranslate"><span class="pre">GenericOrchestratorView.fields</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="django_inscode.html#django_inscode.views.GenericOrchestratorView.execute"><code class="docutils literal notranslate"><span class="pre">GenericOrchestratorView.execute()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="django_inscode.html#id9"><code class="docutils literal notranslate"><span class="pre">GenericOrchestratorView.service</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="django_inscode.html#django_inscode.views.GenericView"><code class="docutils literal notranslate"><span class="pre">GenericView</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="django_inscode.html#django_inscode.views.GenericView.service"><code class="docutils literal notranslate"><span class="pre">GenericView.service</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="django_inscode.html#django_inscode.views.GenericView.permissions_classes"><code class="docutils literal notranslate"><span class="pre">GenericView.permissions_classes</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="django_inscode.html#django_inscode.views.GenericView.fields"><code class="docutils literal notranslate"><span class="pre">GenericView.fields</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="django_inscode.html#django_inscode.views.GenericView.check_permissions"><code class="docutils literal notranslate"><span class="pre">GenericView.check_permissions()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="django_inscode.html#django_inscode.views.GenericView.dispatch"><code class="docutils literal notranslate"><span class="pre">GenericView.dispatch()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="django_inscode.html#id10"><code class="docutils literal notranslate"><span class="pre">GenericView.fields</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="django_inscode.html#django_inscode.views.GenericView.get_context"><code class="docutils literal notranslate"><span class="pre">GenericView.get_context()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="django_inscode.html#django_inscode.views.GenericView.get_object"><code class="docutils literal notranslate"><span class="pre">GenericView.get_object()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="django_inscode.html#django_inscode.views.GenericView.get_permissions"><code class="docutils literal notranslate"><span class="pre">GenericView.get_permissions()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="django_inscode.html#django_inscode.views.GenericView.get_service"><code class="docutils literal notranslate"><span class="pre">GenericView.get_service()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="django_inscode.html#id11"><code class="docutils literal notranslate"><span class="pre">GenericView.permissions_classes</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="django_inscode.html#id12"><code class="docutils literal notranslate"><span class="pre">GenericView.service</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="django_inscode.html#django_inscode.views.GenericView.verify_fields"><code class="docutils literal notranslate"><span class="pre">GenericView.verify_fields()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="django_inscode.html#django_inscode.views.ModelView"><code class="docutils literal notranslate"><span class="pre">ModelView</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="django_inscode.html#django_inscode.views.ModelView.serializer"><code class="docutils literal notranslate"><span class="pre">ModelView.serializer</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="django_inscode.html#django_inscode.views.ModelView.lookup_field"><code class="docutils literal notranslate"><span class="pre">ModelView.lookup_field</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="django_inscode.html#django_inscode.views.ModelView.paginate_by"><code class="docutils literal notranslate"><span class="pre">ModelView.paginate_by</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="django_inscode.html#django_inscode.views.ModelView.service"><code class="docutils literal notranslate"><span class="pre">ModelView.service</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="django_inscode.html#django_inscode.views.ModelView.permissions_classes"><code class="docutils literal notranslate"><span class="pre">ModelView.permissions_classes</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="django_inscode.html#django_inscode.views.ModelView.fields"><code class="docutils literal notranslate"><span class="pre">ModelView.fields</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="django_inscode.html#django_inscode.views.RetrieveModelView"><code class="docutils literal notranslate"><span class="pre">RetrieveModelView</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="django_inscode.html#django_inscode.views.RetrieveModelView.serializer"><code class="docutils literal notranslate"><span class="pre">RetrieveModelView.serializer</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="django_inscode.html#django_inscode.views.RetrieveModelView.lookup_field"><code class="docutils literal notranslate"><span class="pre">RetrieveModelView.lookup_field</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="django_inscode.html#django_inscode.views.RetrieveModelView.paginate_by"><code class="docutils literal notranslate"><span class="pre">RetrieveModelView.paginate_by</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="django_inscode.html#django_inscode.views.RetrieveModelView.service"><code class="docutils literal notranslate"><span class="pre">RetrieveModelView.service</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="django_inscode.html#django_inscode.views.RetrieveModelView.permissions_classes"><code class="docutils literal notranslate"><span class="pre">RetrieveModelView.permissions_classes</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="django_inscode.html#django_inscode.views.UpdateModelView"><code class="docutils literal notranslate"><span class="pre">UpdateModelView</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="django_inscode.html#django_inscode.views.UpdateModelView.serializer"><code class="docutils literal notranslate"><span class="pre">UpdateModelView.serializer</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="django_inscode.html#django_inscode.views.UpdateModelView.lookup_field"><code class="docutils literal notranslate"><span class="pre">UpdateModelView.lookup_field</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="django_inscode.html#django_inscode.views.UpdateModelView.service"><code class="docutils literal notranslate"><span class="pre">UpdateModelView.service</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="django_inscode.html#django_inscode.views.UpdateModelView.permissions_classes"><code class="docutils literal notranslate"><span class="pre">UpdateModelView.permissions_classes</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="django_inscode.html#django_inscode.views.UpdateModelView.fields"><code class="docutils literal notranslate"><span class="pre">UpdateModelView.fields</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="django_inscode.html#module-django_inscode">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="setup.html">setup module</a></li>
+</ul>
+</div>
+</section>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../index.html">django-inscode</a></h1>
+
+
+
+
+
+
+
+
+
+<search id="searchbox" style="display: none" role="search">
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Search"/>
+      <input type="submit" value="Ir" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script><h3>Navegação</h3>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  </ul></li>
+</ul>
+</div>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &#169;2025, InsCode.
+      
+      |
+      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 8.1.3</a>
+      &amp; <a href="https://alabaster.readthedocs.io">Alabaster 1.0.0</a>
+      
+      |
+      <a href="../_sources/source/modules.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

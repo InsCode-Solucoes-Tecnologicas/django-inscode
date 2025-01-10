@@ -11,18 +11,25 @@ class OrchestratorService(ABC):
     """
     Classe base para serviços orquestradores.
 
-    Um serviço orquestrador consiste em um serviço genérico que realiza lógicas complexas
-    na API. Isto é, não é um simples serviço de CRUD, mas sim um serviço que muitas vezes
-    irá utilizar diversos repositórios ou outros serviços para realizar uma operação lógica
-    maior na API.
+    Um serviço orquestrador realiza lógicas complexas que podem envolver múltiplos repositórios
+    ou outros serviços para executar operações maiores na API. É ideal para operações que vão
+    além do CRUD básico.
 
-    Você pode criar diversos métodos extras para a classe deste serviço, no entanto, o código
-    principal deve estar presente no método execute deste serviço.
+    Métodos:
+        execute: Método abstrato para implementar a lógica principal do serviço.
     """
 
     @abstractmethod
     def execute(self, *args, **kwargs):
-        """Executa o código principal do serviço"""
+        """
+        Executa o código principal do serviço.
+
+        Este método deve ser implementado pelas subclasses para definir a lógica específica.
+
+        Args:
+            *args: Argumentos posicionais necessários para a execução.
+            **kwargs: Argumentos nomeados adicionais.
+        """
         pass
 
 
@@ -30,17 +37,30 @@ class GenericModelService:
     """
     Classe genérica para servir como base para serviços de modelos.
 
-    Serviços de modelos são serviços responsável por lidar com a lógica CRUD de modelos.
+    Serviços de modelos lidam com a lógica CRUD de modelos, atuando em uma camada acima dos
+    repositórios. Eles podem realizar validações e outras lógicas de negócio antes de interagir
+    com o banco de dados.
 
-    Um serviço atua em uma camada acima do repositório, isto é, ela utiliza um repositório
-    associado ao modelo ou multiplos repositórios para realizar ações de lógicas de negócio
-    antes de performar uma ação no banco de dados.
+    Attributes:
+        repository (Repository): O repositório associado ao modelo.
     """
 
     def __init__(self, repository: T):
+        """
+        Inicializa o serviço com o repositório associado.
+
+        Args:
+            repository (Repository): O repositório do modelo que será utilizado pelo serviço.
+        """
         self.repository = repository
 
     def get_model_repository(self):
+        """
+        Retorna o repositório associado ao modelo.
+
+        Returns:
+            Repository: O repositório associado ao modelo.
+        """
         return self.repository
 
 
@@ -52,26 +72,29 @@ class ModelService(
     mixins.ServiceDeleteMixin,
 ):
     """
-    Esta classe fornece todas as ações necessárias para criar, atualizar, ler e excluir
-    um modelo de forma automática.
+    Serviço que fornece ações CRUD (criar, ler, atualizar e excluir) para um modelo.
 
-    Para modelos simples que não necessitam de nenhuma validação, esta classe irá fornecer
-    tudo pronto.
+    Esta classe é adequada para modelos simples que não necessitam de lógicas
+    adicionais. Para casos mais complexos, os métodos podem ser sobrescritos.
 
-    Caso o modelo precise de lógicas adicionais ou validações, você pode sobrescrever os métodos
-    validate, create, read, list_all, filter e delete.
+    Métodos:
+        validate: Valida os dados antes de criar ou atualizar uma instância.
+        perform_action: Executa uma ação no serviço (e.g., criar, ler, atualizar ou excluir).
     """
 
     def validate(self, data: Dict, instance=None):
         """
-        Método para validar os dados passados no corpo da requisição durante uma ação de
-        criação ou atualização.
+        Valida os dados fornecidos durante uma ação de criação ou atualização.
 
-        Durante a ação de criação, o argumento 'instance' não estará disponível.
+        Durante a criação, o argumento `instance` não estará disponível. Durante a atualização,
+        `instance` será a instância em questão, permitindo validações adicionais baseadas no objeto.
 
-        Já, em uma ação de atualização, o argumento 'instance' estará acessível e será
-        corresponde à instância em atualização em questão. Isso permite criar validações
-        adicionais com base no objeto.
+        Args:
+            data (Dict): Dados fornecidos para validação.
+            instance (Model, optional): Instância em atualização (caso aplicável).
+
+        Raises:
+            ValidationError: Se os dados não forem válidos.
         """
         pass
 
@@ -83,16 +106,19 @@ class ModelService(
         como criar, ler, atualizar ou excluir instâncias do modelo. Ele garante que
         validações sejam executadas antes das operações.
 
-        Parâmetros:
+        Args:
             action (str): A ação a ser realizada (e.g., 'create', 'read', 'update', 'delete').
             *args: Argumentos posicionais necessários para a ação.
             **kwargs: Argumentos nomeados adicionais (e.g., 'data' para criação/atualização).
 
-        Retorna:
-            O resultado da operação correspondente.
+        Returns:
+            Any: O resultado da operação correspondente.
 
-        Levanta:
+        Raises:
             ValueError: Se a ação especificada não for reconhecida.
+            ValidationError: Se os dados fornecidos forem inválidos.
+            NotFound: Se o recurso solicitado não for encontrado.
+            InternalServerError: Se ocorrer um erro inesperado durante a operação.
         """
         data = kwargs.get("data", {})
         filter_kwargs = kwargs.get("filter_kwargs", {})
