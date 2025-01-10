@@ -1,15 +1,10 @@
-import datetime
-import uuid
-
+from dataclasses import fields, is_dataclass
+from typing import Any, Dict, List, Optional, Union, get_args, get_origin
 from decimal import Decimal
-from typing import Any, Dict, List, Type, Union, get_origin, get_args
-from dataclasses import fields
-
+from uuid import UUID
 from django.db import models
-from django.db.models.fields.files import FieldFile
-from django.db.models.fields.reverse_related import ForeignObjectRel
-
-from .transports import Transport
+from django.core.files.base import File
+import datetime
 
 
 class Serializer:
@@ -24,7 +19,7 @@ class Serializer:
         transport (Type[Transport]): Classe de transporte que define os campos e tipos para serialização.
     """
 
-    def __init__(self, model: models.Model, transport: Type[Transport]):
+    def __init__(self, model: models.Model, transport: Any):
         """
         Inicializa o serializador com o modelo e o transporte especificados.
 
@@ -35,8 +30,11 @@ class Serializer:
         Raises:
             ValueError: Se `transport` não for uma subclasse de `Transport`.
         """
-        self.transport = transport
+        if not is_dataclass(transport):
+            raise ValueError("O transport deve ser um dataclass.")
+
         self.model = model
+        self.transport = transport
 
     def serialize(self, instance) -> Dict[str, Any]:
         """
@@ -63,77 +61,99 @@ class Serializer:
             field_name = field.name
             field_type = field.type
 
-            value = getattr(instance, field_name, None)
-            serialized_data[field_name] = self._serialize_field(value, field_type)
-
-        for related_field in instance._meta.get_fields():
-            if isinstance(related_field, ForeignObjectRel):
-                related_name = related_field.get_accessor_name()
-                related_manager = getattr(instance, related_name)
-                serialized_data[related_name] = [
-                    Serializer(
-                        model=rel_instance.__class__, transport=self.transport
-                    ).serialize(rel_instance)
-                    for rel_instance in related_manager.all()
-                ]
+            value = self._get_field_value(instance, field_name)
+            serialized_data[field_name] = self._serialize(value, field_type)
 
         return serialized_data
 
-    def _serialize_field(self, value: Any, field_type: Any) -> Any:
-        """
-        Serializa um campo individual com base no tipo especificado no transporte.
+    def _get_field_value(self, instance: models.Model, field_name: str) -> Any:
+        """Obtém o valor de um campo ou relacionamento reverso."""
 
-        Este método lida com diferentes tipos de dados, incluindo primitivos (str, int, float),
-        UUIDs, datas, arquivos e coleções como listas e dicionários. Também suporta campos aninhados
-        definidos por outros `Transport`.
+        if hasattr(instance, field_name):
+            return getattr(instance, field_name)
 
-        Args:
-            value (Any): Valor do campo a ser serializado.
-            field_type (Any): Tipo esperado do campo conforme definido no transporte.
+        related_manager = getattr(
+            instance._meta.default_manager.model, field_name, None
+        )
+        if related_manager:
+            return getattr(instance, field_name).all()
 
-        Returns:
-            Any: Valor serializado.
+        return None
 
-        Raises:
-            TypeError: Se o tipo do campo não for suportado.
-        """
-
+    def _serialize(self, value: Any, field_type: Any) -> Any:
+        """Centraliza a lógica de serialização delegando para métodos específicos."""
         if value is None:
             return None
 
-        if isinstance(value, (str, int, float, bool)):
-            return value
-        if isinstance(value, (uuid.UUID, Decimal)):
-            return str(value)
-        if isinstance(value, (datetime.date, datetime.datetime)):
-            return value.isoformat()
+        type_serializers = {
+            str: self._serialize_basic,
+            int: self._serialize_basic,
+            float: self._serialize_basic,
+            bool: self._serialize_basic,
+            Decimal: self._serialize_decimal,
+            UUID: self._serialize_uuid,
+            datetime.date: self._serialize_date,
+            datetime.datetime: self._serialize_date,
+            File: self._serialize_file,
+        }
 
-        if isinstance(value, FieldFile):
-            return value.url if value else None
+        for base_type, serializer_func in type_serializers.items():
+            if isinstance(value, base_type):
+                return serializer_func(value)
 
         origin = get_origin(field_type)
         args = get_args(field_type)
 
-        if origin is list or origin is List:
-            return [self._serialize_field(item, args[0]) for item in value]
+        if origin in [list, List]:
+            return self._serialize_list(value, args[0])
 
-        if origin is dict or origin is Dict:
-            key_type, value_type = args
-            return {
-                self._serialize_field(k, key_type): self._serialize_field(v, value_type)
-                for k, v in value.items()
-            }
+        if origin in [dict, Dict]:
+            return self._serialize_dict(value, args)
 
-        if origin is Union:
-            for arg in args:
-                try:
-                    return self._serialize_field(value, arg)
-                except Exception:
-                    continue
+        if origin is Union and type(None) in args:
+            non_none_type = next(arg for arg in args if arg is not type(None))
+            return self._serialize(value, non_none_type)
 
-        if isinstance(value, models.Model) and issubclass(field_type, Transport):
-            return Serializer(model=type(value), transport=field_type).serialize(
-                instance=value
-            )
+        if is_dataclass(field_type):
+            return self._serialize_transport(value, field_type)
 
         raise TypeError(f"Tipo não suportado: {field_type}")
+
+    def _serialize_basic(self, value: Any) -> Any:
+        """Serializa tipos básicos como str, int e bool."""
+        return value
+
+    def _serialize_decimal(self, value: Decimal) -> str:
+        """Serializa valores Decimais como strings."""
+        return str(value)
+
+    def _serialize_uuid(self, value: UUID) -> str:
+        """Serializa UUIDs como strings."""
+        return str(value)
+
+    def _serialize_date(self, value: Union[datetime.date, datetime.datetime]) -> str:
+        """Serializa datas e datetimes como strings ISO 8601."""
+        return value.isoformat()
+
+    def _serialize_file(self, value: File) -> Optional[str]:
+        """Serializa arquivos como URLs."""
+        return value.url if value else None
+
+    def _serialize_list(self, value: List[Any], item_type: Any) -> List[Any]:
+        """Serializa listas recursivamente."""
+        return [self._serialize(item, item_type) for item in value]
+
+    def _serialize_dict(self, value: Dict[Any, Any], types: tuple) -> Dict[Any, Any]:
+        """Serializa dicionários recursivamente."""
+        key_type, value_type = types
+        return {
+            self._serialize(k, key_type): self._serialize(v, value_type)
+            for k, v in value.items()
+        }
+
+    def _serialize_transport(
+        self, value: models.Model, transport_type: Any
+    ) -> Dict[str, Any]:
+        """Serializa objetos relacionados usando transportes aninhados."""
+        model_class = type(value)
+        return Serializer(model=model_class, transport=transport_type).serialize(value)
