@@ -67,18 +67,9 @@ class Serializer:
         return serialized_data
 
     def _get_field_value(self, instance: models.Model, field_name: str) -> Any:
-        """Obtém o valor de um campo ou relacionamento reverso."""
+        """Obtém o valor de um campo."""
 
-        if hasattr(instance, field_name):
-            return getattr(instance, field_name)
-
-        related_manager = getattr(
-            instance._meta.default_manager.model, field_name, None
-        )
-        if related_manager:
-            return getattr(instance, field_name).all()
-
-        return None
+        return getattr(instance, field_name, None)
 
     def _serialize(self, value: Any, field_type: Any) -> Any:
         """Centraliza a lógica de serialização delegando para métodos específicos."""
