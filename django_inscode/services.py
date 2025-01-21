@@ -63,25 +63,6 @@ class GenericModelService:
         """
         return self.repository
 
-
-class ModelService(
-    GenericModelService,
-    mixins.ServiceCreateMixin,
-    mixins.ServiceReadMixin,
-    mixins.ServiceUpdateMixin,
-    mixins.ServiceDeleteMixin,
-):
-    """
-    Serviço que fornece ações CRUD (criar, ler, atualizar e excluir) para um modelo.
-
-    Esta classe é adequada para modelos simples que não necessitam de lógicas
-    adicionais. Para casos mais complexos, os métodos podem ser sobrescritos.
-
-    Métodos:
-        validate: Valida os dados antes de criar ou atualizar uma instância.
-        perform_action: Executa uma ação no serviço (e.g., criar, ler, atualizar ou excluir).
-    """
-
     def validate(self, data: Dict, instance=None):
         """
         Valida os dados fornecidos durante uma ação de criação ou atualização.
@@ -124,20 +105,37 @@ class ModelService(
         filter_kwargs = kwargs.get("filter_kwargs", {})
         context = kwargs.get("context", {})
 
-        if action == "create":
+        if action == "create" and isinstance(self, mixins.ServiceCreateMixin):
             self.validate(data)
             return self.create(data, context)
-        elif action == "read":
+        elif action == "read" and isinstance(self, mixins.ServiceReadMixin):
             return self.read(*args, context=context)
-        elif action == "list_all":
+        elif action == "list_all" and isinstance(self, mixins.ServiceReadMixin):
             return self.list_all(context=context)
-        elif action == "list":
+        elif action == "list" and isinstance(self, mixins.ServiceReadMixin):
             return self.list(context=context, **filter_kwargs)
-        elif action == "update":
+        elif action == "update" and isinstance(self, mixins.ServiceUpdateMixin):
             instance = self.read(*args, context=context)
             self.validate(data, instance=instance)
             return self.update(*args, data=data, context=context)
-        elif action == "delete":
+        elif action == "delete" and isinstance(self, mixins.ServiceDeleteMixin):
             return self.delete(*args, context=context)
         else:
-            raise ValueError(f"Ação desconhecida: {action}")
+            raise ValueError(f"Ação desconhecida ou inválida: {action}")
+
+
+class ModelService(
+    GenericModelService,
+    mixins.ServiceCreateMixin,
+    mixins.ServiceReadMixin,
+    mixins.ServiceUpdateMixin,
+    mixins.ServiceDeleteMixin,
+):
+    """
+    Serviço que fornece ações CRUD (criar, ler, atualizar e excluir) para um modelo.
+
+    Esta classe é adequada para modelos simples que não necessitam de lógicas
+    adicionais. Para casos mais complexos, os métodos podem ser sobrescritos.
+    """
+
+    pass
