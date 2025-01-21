@@ -1,5 +1,5 @@
 from uuid import UUID
-from typing import Dict, Any, TypeVar
+from typing import Dict, Any, TypeVar, Optional
 
 from django.http import HttpRequest, JsonResponse
 from django.db.models import QuerySet, Model
@@ -197,6 +197,44 @@ class ViewRetrieveModelMixin:
         list: Lista múltiplas instâncias com paginação e filtros opcionais.
         get: Decide entre `retrieve` ou `list` com base na presença de um identificador.
     """
+
+    def get_queryset(self, filter_kwargs: Optional[Dict[str, Any]] = None):
+        """
+        Retorna o queryset filtrado com base nos argumentos fornecidos.
+
+        Args:
+            filter_kwargs (Optional[Dict[str, Any]]): Dicionário contendo filtros opcionais.
+
+        Returns:
+            QuerySet: Queryset filtrado com base nos critérios fornecidos.
+        """
+        filter_kwargs = filter_kwargs or {}
+
+        context = self.get_context(self.request)
+
+        return self.service.perform_action(
+            "list", filter_kwargs=filter_kwargs, context=context
+        )
+
+    def paginate_queryset(self, queryset, page_number):
+        """
+        Realiza a paginação básica do queryset com base no número da página.
+
+        Args:
+            queryset (QuerySet): Queryset a ser paginado.
+            page_number (int): Número da página desejada.
+
+        Returns:
+            QuerySet: Subconjunto do queryset correspondente à página solicitada.
+
+        Raises:
+            ValueError: Se o número da página for inválido.
+        """
+
+        start = (page_number - 1) * self.paginate_by
+        end = start + self.paginate_by
+
+        return queryset[start:end]
 
     def retrieve(self, request: HttpRequest, *args, **kwargs) -> JsonResponse:
         """
