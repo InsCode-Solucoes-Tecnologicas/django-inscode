@@ -1,6 +1,6 @@
 from django.conf import settings as django_settings
 
-from datetime import datetime, date
+from datetime import datetime
 
 from django_inscode import settings
 import pytz
@@ -19,26 +19,26 @@ def get_actual_datetime() -> datetime:
 
 def parse_str_to_datetime(datetime_str: str) -> datetime:
     """
-    Converte uma string ou objeto date em um objeto datetime com base no formato especificado.
+    Converte uma string representando data e hora em um objeto datetime válido.
 
-    :param datetime_str: A string representando a data e hora ou um objeto date.
+    :param datetime_str: A string representando a data no formato 'YYYY-MM-DD' ou 'YYYY-MM-DD HH:MM:SS'.
     :return: Um objeto datetime convertido.
     :raises ValueError: Se a string não estiver no formato esperado.
-    :raises TypeError: Se o argumento não for uma string ou um objeto date.
     """
-    if isinstance(datetime_str, date) and not isinstance(datetime_str, datetime):
-        datetime_str = datetime_str.strftime("%Y-%m-%d 00:00:00")
-
-    elif not isinstance(datetime_str, str):
+    if not isinstance(datetime_str, str):
         raise TypeError(
-            f"O argumento deve ser uma string ou um objeto date, mas foi recebido: {type(datetime_str).__name__}"
+            f"O argumento deve ser uma string, mas foi recebido: {type(datetime_str).__name__}"
         )
 
     try:
-        _date = datetime.strptime(datetime_str, settings.DEFAULT_DATETIME_FORMAT)
-        return _date
+        # Tenta analisar o formato com data e hora
+        return datetime.strptime(datetime_str, "%Y-%m-%d %H:%M:%S")
     except ValueError:
-        raise ValueError(
-            f"Erro ao converter '{datetime_str}' para datetime. "
-            f"Certifique-se de que está no formato esperado: {settings.DEFAULT_DATETIME_FORMAT}"
-        )
+        try:
+            # Se falhar, tenta apenas a data e adiciona 00:00:00
+            return datetime.strptime(datetime_str, "%Y-%m-%d")
+        except ValueError:
+            raise ValueError(
+                f"Erro ao converter '{datetime_str}' para datetime. "
+                "Certifique-se de que está no formato 'YYYY-MM-DD' ou 'YYYY-MM-DD HH:MM:SS'."
+            )
