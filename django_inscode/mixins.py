@@ -251,14 +251,8 @@ class ViewRetrieveModelMixin:
         Raises:
             exceptions.BadRequest: Se nenhum identificador for especificado.
         """
-        obj_id = kwargs.get(self.lookup_field)
-
-        if not obj_id:
-            raise exceptions.BadRequest("Nenhum identificador especificado.")
-
         obj = self.get_object()
         serialized_obj = self.serialize_object(obj)
-
         return JsonResponse(serialized_obj, status=200)
 
     def list(self, request: HttpRequest, *args, **kwargs) -> JsonResponse:
