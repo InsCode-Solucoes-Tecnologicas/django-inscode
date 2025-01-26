@@ -45,10 +45,20 @@ class Repository:
         if hasattr(error, "error_dict"):
             for field, field_errors in error.error_dict.items():
                 for field_error in field_errors:
-                    errors.append({"field": field, "message": field_error.message})
+                    message = (
+                        field_error.message % field_error.params
+                        if field_error.params
+                        else field_error.message
+                    )
+                    errors.append({"field": field, "message": message})
         elif hasattr(error, "error_list"):
             for field_error in error.error_list:
-                errors.append({"field": None, "message": field_error.message})
+                message = (
+                    field_error.message % field_error.params
+                    if field_error.params
+                    else field_error.message
+                )
+                errors.append({"field": None, "message": message})
         return errors
 
     def _save(
