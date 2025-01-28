@@ -68,7 +68,9 @@ class Serializer:
 
     def _get_field_value(self, instance: models.Model, field_name: str) -> Any:
         """Obtém o valor de um campo."""
-
+        field = instance._meta.get_field(field_name)
+        if field.many_to_many or field.one_to_many:
+            return list(getattr(instance, field_name).all())
         return getattr(instance, field_name, None)
 
     def _serialize(self, value: Any, field_type: Any) -> Any:
