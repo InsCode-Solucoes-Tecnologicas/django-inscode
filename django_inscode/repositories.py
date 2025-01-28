@@ -84,7 +84,7 @@ class Repository:
                     for field_name, value in many_to_many_data.items():
                         field_object = instance._meta.get_field(field_name)
 
-                        if not isinstance(value, list, QuerySet):
+                        if not isinstance(value, (list, QuerySet)):
                             raise BadRequest(
                                 message=f"Invalid data for ManyToMany field '{field_name}'. Expected a list/QuerySet.",
                                 errors=[
