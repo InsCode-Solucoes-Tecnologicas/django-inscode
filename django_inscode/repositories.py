@@ -268,3 +268,6 @@ class Repository:
             QuerySet[T]: Conjunto de resultados contendo as instâncias que atendem aos filtros.
         """
         return self.model.objects.filter(**kwargs)
+
+
+__all__ = ["Repository"]

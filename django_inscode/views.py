@@ -2,7 +2,7 @@ from django.views import View
 from django.core.exceptions import ImproperlyConfigured
 from django.http import HttpRequest, JsonResponse
 
-from typing import Set, Dict, Any, Optional, List, TypeVar, Type, Union
+from typing import Set, Dict, Any, List, TypeVar, Type, Union
 
 from . import mixins
 from . import exceptions
@@ -10,12 +10,12 @@ from . import settings
 
 from .permissions import BasePermission
 from .services import GenericModelService, OrchestratorService
-from .serializers import Serializer
+from .serializers import SerializerInterface, SerializerFactory
 
 t_permission = TypeVar("t_permission", bound=BasePermission)
 t_generic_model_service = TypeVar("t_generic_model_service", bound=GenericModelService)
 t_orchestrator_service = TypeVar("t_orchestrator_service", bound=OrchestratorService)
-t_serializer = TypeVar("t_serializer", bound=Serializer)
+t_serializer = TypeVar("t_serializer", bound=SerializerInterface)
 t_service = Union[t_generic_model_service, t_orchestrator_service]
 
 
@@ -196,9 +196,6 @@ class GenericOrchestratorView(GenericView, mixins.ContentTypeHandlerMixin):
 
         result = service.execute(*args, data=data, context=context, **kwargs)
 
-        if self.serializer:
-            result = self.get_serializer().serialize(result)
-
         return JsonResponse(result, status=200)
 
 
@@ -291,7 +288,7 @@ class GenericModelView(GenericView):
         Raises:
             ImproperlyConfigured: Se o atributo `serializer` não estiver definido.
         """
-        return self.serializer
+        return SerializerFactory.get_serializer(self.serializer)
 
     def serialize_object(self, obj):
         """
@@ -386,3 +383,15 @@ class ModelView(
     """
 
     pass
+
+
+__all__ = [
+    "GenericView",
+    "GenericOrchestratorView",
+    "GenericModelView",
+    "CreateModelView",
+    "RetrieveModelView",
+    "UpdateModelView",
+    "DeleteModelView",
+    "ModelView",
+]

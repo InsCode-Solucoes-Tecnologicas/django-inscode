@@ -1,13 +1,31 @@
 from dataclasses import fields, is_dataclass
-from typing import Any, Dict, List, Optional, Union, get_args, get_origin
+from typing import Any, Dict, List, Optional, Union, get_args, get_origin, Protocol
 from decimal import Decimal
 from uuid import UUID
 from django.db import models
 from django.core.files.base import File
+from marshmallow import Schema
+
 import datetime
 
 
-class Serializer:
+class SerializerInterface(Protocol):
+    def serialize(self, obj) -> Dict[str, Any]: ...
+
+
+class MarshmallowSerializerAdapter(SerializerInterface):
+    """
+    Adaptador do serializador do marshmallow para a interface de SerializerInterface.
+    """
+
+    def __init__(self, schema_class):
+        self.schema_class = schema_class
+
+    def serialize(self, obj):
+        return self.schema_class().dump(obj)
+
+
+class Serializer(SerializerInterface):
     """
     Serializador personalizado para transformar instâncias de modelos Django em dicionários.
 
@@ -150,3 +168,25 @@ class Serializer:
         """Serializa objetos relacionados usando transportes aninhados."""
         model_class = type(value)
         return Serializer(model=model_class, transport=transport_type).serialize(value)
+
+
+class SerializerFactory:
+    @staticmethod
+    def get_serializer(serializer):
+        if isinstance(serializer, Schema):
+            return MarshmallowSerializerAdapter(serializer)
+
+        if isinstance(serializer, Serializer):
+            return serializer
+
+        raise TypeError(
+            f"Tipo de serializador não suportado: {type(serializer).__name__}"
+        )
+
+
+__all__ = [
+    "SerializerInterface",
+    "MarshmallowSerializerAdapter",
+    "Serializer",
+    "SerializerFactory",
+]
