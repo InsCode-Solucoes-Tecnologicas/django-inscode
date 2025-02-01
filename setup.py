@@ -20,9 +20,18 @@ instalar na versão {}.{}.
     )
     sys.exit(1)
 
+
+def read(f):
+    with open(f, "r", encoding="utf-8") as file:
+        return file.read()
+
+
 setup(
     name="django-inscode",
-    version="0.1.13",
+    version="0.1.14",
+    description="Django framework da Inscode.",
+    long_description=read("README.md"),
+    long_description_content_type="text/markdown",
     packages=find_packages(),
     include_package_data=True,
     install_requires=[
