@@ -15,3 +15,6 @@ class Transport:
     """
 
     id: UUID
+
+
+__all__ = ["Transport"]

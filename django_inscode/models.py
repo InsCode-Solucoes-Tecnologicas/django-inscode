@@ -39,3 +39,6 @@ class SoftDeleteBaseModel(SoftDeleteModel):
 
     class Meta:
         abstract = True
+
+
+__all__ = ["BaseModel", "SoftDeleteBaseModel"]

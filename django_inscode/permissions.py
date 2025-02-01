@@ -168,3 +168,6 @@ class IsAuthenticated(BasePermission):
             bool: `True` se o usuário estiver autenticado, caso contrário `False`.
         """
         return bool(request.user and request.user.is_authenticated)
+
+
+__all__ = ["BasePermission", "IsAuthenticated"]

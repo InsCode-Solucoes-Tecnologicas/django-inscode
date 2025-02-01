@@ -22,13 +22,14 @@ instalar na versão {}.{}.
 
 setup(
     name="django-inscode",
-    version="0.1.12",
+    version="0.1.13",
     packages=find_packages(),
     include_package_data=True,
     install_requires=[
         "Django>=5.1",
         "django-soft-delete>=1.0.16",
         "pytz>=2024.2",
+        "marshmallow>=3.26.0",
     ],
     python_requires=">=3.12",
     classifiers=[

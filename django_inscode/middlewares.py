@@ -63,7 +63,10 @@ class ExceptionHandlingMiddleware:
             {
                 "code": 500,
                 "message": "An unexpected error occurred.",
-                "errors": [{"field": None, "message": str(exception)}],
+                "errors": {"message": str(exception)},
             },
             status=500,
         )
+
+
+__all__ = ["ExceptionHandlingMiddleware"]
