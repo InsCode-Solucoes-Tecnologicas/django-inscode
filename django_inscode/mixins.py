@@ -1,14 +1,18 @@
 from uuid import UUID
-from typing import Dict, Any, TypeVar, Optional
+from typing import Dict, Any, TypeVar, Optional, Union
 
 from django.http import HttpRequest, JsonResponse
 from django.db.models import QuerySet, Model
 
+from django_filters import FilterSet
+
+from . import settings
 from . import exceptions
 
 import json
 
 t_model = TypeVar("t_model", bound=Model)
+t_filter = TypeVar("t_filter", bound=FilterSet)
 
 
 class ServiceCreateMixin:
@@ -198,6 +202,20 @@ class ViewRetrieveModelMixin:
         get: Decide entre `retrieve` ou `list` com base na presença de um identificador.
     """
 
+    paginate_by: int = settings.DEFAULT_PAGINATED_BY
+    filter_class: t_filter = None
+
+    def get_filter_class(self) -> Union[FilterSet, None]:
+        """
+        Retorna a classe de filtro caso esta esteja especificada.
+        """
+        if self.filter_class and not issubclass(self.filter_class, FilterSet):
+            raise TypeError(
+                "A classe de filtro deve ser uma subclasse de django_filters.FilterSet."
+            )
+
+        return self.filter_class
+
     def get_queryset(self, filter_kwargs: Optional[Dict[str, Any]] = None):
         """
         Retorna o queryset filtrado com base nos argumentos fornecidos.
@@ -267,10 +285,16 @@ class ViewRetrieveModelMixin:
         Returns:
             JsonResponse: Resposta JSON contendo os resultados paginados e metadados de paginação.
         """
-        filter_kwargs = request.GET.dict()
-        queryset = self.get_queryset(filter_kwargs)
-        page_number = int(request.GET.get("page", 1))
+        filter_class = self.get_filter_class()
 
+        if filter_class is not None:
+            queryset = self.get_queryset()
+            filterset = filter_class(request.GET, queryset=queryset)
+            queryset = filterset.qs
+        else:
+            queryset = self.get_queryset(filter_kwargs=request.GET.dict())
+
+        page_number = int(request.GET.get("page", 1))
         paginated_queryset = self.paginate_queryset(
             queryset=queryset, page_number=page_number
         )

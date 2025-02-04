@@ -28,7 +28,7 @@ def read(f):
 
 setup(
     name="django-inscode",
-    version="0.1.15",
+    version="0.1.16",
     description="Django framework da Inscode.",
     long_description=read("README.md"),
     long_description_content_type="text/markdown",
@@ -39,6 +39,7 @@ setup(
         "django-soft-delete>=1.0.16",
         "pytz>=2024.2",
         "marshmallow>=3.26.0",
+        "django-filter>=24.3",
     ],
     python_requires=">=3.12",
     classifiers=[
