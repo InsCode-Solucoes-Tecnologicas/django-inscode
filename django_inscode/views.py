@@ -6,7 +6,6 @@ from typing import Set, Dict, Any, List, TypeVar, Type, Union
 
 from . import mixins
 from . import exceptions
-from . import settings
 
 from .permissions import BasePermission
 from .services import GenericModelService, OrchestratorService
@@ -218,7 +217,6 @@ class GenericModelView(GenericView):
 
     serializer: t_serializer = None
     lookup_field: str = "pk"
-    paginate_by: int = settings.DEFAULT_PAGINATED_BY
 
     def _validate_required_attributes(self):
         """
