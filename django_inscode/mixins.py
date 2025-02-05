@@ -146,7 +146,7 @@ class ContentTypeHandlerMixin:
         """
         if request.content_type == "application/json":
             try:
-                return json.loads(request.body)
+                return json.loads(request.body) if request.body else {}
             except json.JSONDecodeError:
                 raise ValueError("JSON inválido na requisição.")
         elif request.content_type.startswith("multipart/form-data"):
