@@ -193,7 +193,9 @@ class GenericOrchestratorView(GenericView, mixins.ContentTypeHandlerMixin):
         context = self.get_context(request)
         service = self.get_service()
 
-        result = service.execute(*args, data=data, context=context, **kwargs)
+        result = service.execute(
+            *args, data=data, request=request, context=context, **kwargs
+        )
 
         return JsonResponse(result, status=200)
 
