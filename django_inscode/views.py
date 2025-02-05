@@ -117,13 +117,22 @@ class GenericView(View):
             if obj and not permission.has_object_permission(request, self, obj):
                 raise exceptions.Forbidden(message=permission.message)
 
+    def get_fields(self) -> Set[str]:
+        """
+        Retorna os campos obrigatórios para requisições de criação.
+
+        Returns:
+            Set[str]: Conjunto de nomes dos campos permitidos.
+        """
+        return self.fields or []
+
     def verify_fields(self, data: Dict) -> None:
         """Verifica se todos os campos obrigatórios estão presentes nos dados."""
         missing_fields = set(self.get_fields()) - set(data.keys())
 
         if missing_fields:
             raise exceptions.BadRequest(
-                f"Campos obrigatórios faltando: {', '.join(missing_fields)}"
+                f"Campos obrigatórios faltando: {[', '.join(missing_fields)]}"
             )
 
     def dispatch(self, request, *args, **kwargs):
@@ -239,15 +248,6 @@ class GenericModelView(GenericView):
                 f"A classe {self.__class__.__name__} deve definir os atributos: "
                 f"{', '.join(missing_attributes)}"
             )
-
-    def get_fields(self) -> Set[str]:
-        """
-        Retorna os campos obrigatórios para requisições de criação.
-
-        Returns:
-            Set[str]: Conjunto de nomes dos campos permitidos.
-        """
-        return self.fields
 
     def get_lookup_value(self):
         """
