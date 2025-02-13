@@ -1,7 +1,12 @@
 from django.db import transaction
 from django.db.models import Model, QuerySet
 from django.utils.translation import gettext as _
-from django.core.exceptions import ValidationError, ObjectDoesNotExist
+from django.core.exceptions import (
+    ValidationError,
+    ObjectDoesNotExist,
+    FieldDoesNotExist,
+)
+from django.db.models.fields.related import ManyToManyField
 
 from uuid import UUID
 from typing import TypeVar, List, Dict, Any
@@ -61,6 +66,13 @@ class Repository:
                 errors.append({"field": None, "message": message})
         return errors
 
+    def _is_reverse_m2m(self, field_name: str) -> bool:
+        """Verifica se o campo é uma relação many-to-many inversa."""
+        for rel in self.model._meta.related_objects:
+            if rel.many_to_many and rel.related_name == field_name:
+                return True
+        return False
+
     def _save(
         self, instance: T, many_to_many_data: Dict[str, List[Any]] = None
     ) -> None:
@@ -82,41 +94,67 @@ class Repository:
 
                 if many_to_many_data:
                     for field_name, value in many_to_many_data.items():
-                        field_object = instance._meta.get_field(field_name)
+                        try:
+                            field = instance._meta.get_field(field_name)
+                            if isinstance(field, ManyToManyField):
+                                related_model = field.remote_field.model
+                        except FieldDoesNotExist:
+                            related_manager = getattr(instance, field_name)
+                            related_model = related_manager.model
+                            field = None
 
                         if not isinstance(value, (list, QuerySet)):
                             raise BadRequest(
-                                message=f"Invalid data for ManyToMany field '{field_name}'. Expected a list/QuerySet.",
-                                errors=[
-                                    {
-                                        "field": field_name,
-                                        "message": "Expected a list of IDs or instances.",
-                                    }
-                                ],
+                                message=f"Valor inválido para o campo ManyToMany.",
+                                errors={
+                                    f"{field_name}": "Esperada uma lista de IDs ou instâncias."
+                                },
                             )
 
-                        if all(isinstance(v, (int, UUID)) for v in value):
-                            related_objects = field_object.related_model.objects.filter(
-                                pk__in=value
-                            )
-                            if len(related_objects) != len(value):
-                                raise BadRequest(
-                                    message=f"Some related objects for '{field_name}' were not found.",
-                                    errors=[
-                                        {
-                                            "field": field_name,
-                                            "message": "Invalid IDs in the list.",
-                                        }
-                                    ],
+                        if all(isinstance(v, (int, UUID, str)) for v in value):
+                            try:
+                                ids = [
+                                    UUID(str(v)) if isinstance(v, str) else v
+                                    for v in value
+                                ]
+
+                                related_objects = related_model.objects.filter(
+                                    pk__in=ids
                                 )
+
+                                if len(related_objects) != len(value):
+                                    ids_found = set(
+                                        related_objects.values_list("pk", flat=True)
+                                    )
+
+                                    missing_ids = set(ids) - ids_found
+
+                                    raise BadRequest(
+                                        message=f"Alguns objetos relacionados não foram encontrados.",
+                                        errors={
+                                            f"{field_name}": f"IDs inválidos: {missing_ids}."
+                                        },
+                                    )
+
+                            except (ValueError, AttributeError):
+                                raise BadRequest(
+                                    message=f"IDs inválidos.",
+                                    errors={
+                                        f"{field_name}": "IDs malformados.",
+                                    },
+                                )
+                        else:
+                            related_objects = value
+
+                        if field:
                             getattr(instance, field_name).set(related_objects)
                         else:
-                            getattr(instance, field_name).set(value)
+                            related_manager.set(related_objects)
 
             except ValidationError as e:
                 raise BadRequest(errors=self._format_validation_errors(e))
             except Exception as e:
-                raise InternalServerError(errors=[{"field": None, "message": str(e)}])
+                raise InternalServerError(errors={"internal_server_error": str(e)})
 
     def create(self, **data) -> T:
         """
@@ -135,12 +173,21 @@ class Repository:
         many_to_many_data = {}
 
         for field_name, value in data.items():
-            field_object = self.model._meta.get_field(field_name)
-            if field_object.many_to_many:
+            try:
+                field = self.model._meta.get_field(field_name)
+
+                if isinstance(field, ManyToManyField):
+                    many_to_many_data[field_name] = value
+                    continue
+            except FieldDoesNotExist:
+                pass
+
+            if self._is_reverse_m2m(field_name):
                 many_to_many_data[field_name] = value
 
-        for field_name in many_to_many_data.keys():
-            data.pop(field_name)
+        for field_name in many_to_many_data:
+            if field_name in data:
+                del data[field_name]
 
         instance = self.model(**data)
         self._save(instance, many_to_many_data)
@@ -167,19 +214,19 @@ class Repository:
 
     def update(self, id: UUID | int, **data) -> T:
         """
-        Atualiza os dados de uma instância existente no banco de dados.
+        Atualiza uma instância existente e seus relacionamentos many-to-many (diretos e inversos).
 
         Args:
-            id (UUID | int): Identificador da instância.
-            **data: Dados atualizados para a instância.
+            id: UUID ou ID inteiro do objeto
+            data: Dados para atualização, podendo incluir campos normais e relacionamentos
 
         Returns:
-            Model: Instância atualizada do modelo.
+            Instância atualizada
 
         Raises:
-            BadRequest: Se houver problemas nos dados fornecidos.
-            NotFound: Se a instância não for encontrada.
-            InternalServerError: Se ocorrer um erro inesperado durante a atualização.
+            BadRequest: Em caso de dados inválidos
+            NotFound: Se o objeto não existir
+            InternalServerError: Para erros inesperados
         """
         instance = self.read(id)
 
@@ -194,37 +241,53 @@ class Repository:
         for key, value in data.items():
             field_name = key[:-3] if key.endswith("_id") else key
 
+            is_m2m = False
+
+            try:
+                field = instance._meta.get_field(field_name)
+
+                if isinstance(field, ManyToManyField):
+                    is_m2m = True
+
+            except FieldDoesNotExist:
+                is_m2m = self._is_reverse_m2m(field_name)
+
+            if is_m2m:
+                many_to_many_data[field_name] = value
+                continue
+
             if field_name in editable_fields:
-                field_object = instance._meta.get_field(field_name)
+                try:
+                    field_object = instance._meta.get_field(field_name)
 
-                if field_object.is_relation and field_object.many_to_one:
-                    if value is not None:
-                        if isinstance(value, field_object.related_model):
-                            setattr(instance, field_name, value)
+                    if field_object.is_relation and field_object.many_to_one:
+                        if value is None:
+                            setattr(instance, field_name, None)
                         else:
-                            try:
-                                related_object = field_object.related_model.objects.get(
-                                    pk=value
+                            if isinstance(value, field_object.related_model):
+                                related_instance = value
+                            else:
+                                related_instance = (
+                                    field_object.related_model.objects.get(pk=value)
                                 )
-                                setattr(instance, field_name, related_object)
-                            except ObjectDoesNotExist:
-                                raise BadRequest(
-                                    message=f"Related object with ID '{value}' not found.",
-                                    errors=[
-                                        {
-                                            "field": field_name,
-                                            "message": "Invalid foreign key reference.",
-                                        }
-                                    ],
-                                )
+
+                            setattr(instance, field_name, related_instance)
+
                     else:
-                        setattr(instance, field_name, None)
+                        setattr(instance, field_name, value)
 
-                elif field_object.is_relation and field_object.many_to_many:
-                    many_to_many_data[field_name] = value
-
-                else:
-                    setattr(instance, field_name, value)
+                except ObjectDoesNotExist:
+                    raise BadRequest(
+                        message=f"Objeto relacionado não encontrado para o campo '{field_name}'",
+                        errors={f"{field_name}": "Referência inválida"},
+                    )
+                except FieldDoesNotExist:
+                    raise BadRequest(
+                        message=f"Campo inválido: '{field_name}'",
+                        errors={
+                            f"{field_name}": "Campo não existe",
+                        },
+                    )
 
         self._save(instance, many_to_many_data)
         return instance

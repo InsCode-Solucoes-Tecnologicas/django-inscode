@@ -80,9 +80,15 @@ class GenericView(View):
             request (HttpRequest): Objeto da requisição HTTP.
 
         Returns:
-            Dict[str, Any]: Contexto adicional com informações do usuário e sessão.
+            Dict[str, Any]: Contexto adicional com informações do usuário, sessão e view.
         """
-        return {"user": request.user, "session": request.session}
+        return {
+            "user": request.user,
+            "session": request.session,
+            "url_params": self.kwargs,
+            "query_params": request.GET.dict(),
+            "view_data": {attr: getattr(self, attr) for attr in self.fields},
+        }
 
     def get_permissions(self) -> List[BasePermission]:
         """
