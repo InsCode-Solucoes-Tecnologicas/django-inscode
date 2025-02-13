@@ -156,6 +156,8 @@ class IsAuthenticated(BasePermission):
         has_permission: Verifica se o usuário está autenticado.
     """
 
+    message = "Usuário não autenticado."
+
     def has_permission(self, request, view) -> bool:
         """
         Verifica se o usuário está autenticado.
