@@ -87,7 +87,6 @@ class GenericView(View):
             "session": request.session,
             "url_params": self.kwargs,
             "query_params": request.GET.dict(),
-            "view_data": {attr: getattr(self, attr) for attr in self.fields},
         }
 
     def get_permissions(self) -> List[BasePermission]:
