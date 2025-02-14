@@ -6,7 +6,7 @@ from django.core.exceptions import (
     ObjectDoesNotExist,
     FieldDoesNotExist,
 )
-from django.db.models.fields.related import ManyToManyField
+from django.db.models.fields.related import ManyToManyRel, ManyToManyField
 
 from uuid import UUID
 from typing import TypeVar, List, Dict, Any
@@ -66,13 +66,6 @@ class Repository:
                 errors.append({"field": None, "message": message})
         return errors
 
-    def _is_reverse_m2m(self, field_name: str) -> bool:
-        """Verifica se o campo é uma relação many-to-many inversa."""
-        for rel in self.model._meta.related_objects:
-            if rel.many_to_many and rel.related_name == field_name:
-                return True
-        return False
-
     def _save(
         self, instance: T, many_to_many_data: Dict[str, List[Any]] = None
     ) -> None:
@@ -96,12 +89,17 @@ class Repository:
                     for field_name, value in many_to_many_data.items():
                         try:
                             field = instance._meta.get_field(field_name)
-                            if isinstance(field, ManyToManyField):
+
+                            if isinstance(field, (ManyToManyField, ManyToManyRel)):
                                 related_model = field.remote_field.model
+
                         except FieldDoesNotExist:
-                            related_manager = getattr(instance, field_name)
-                            related_model = related_manager.model
-                            field = None
+                            raise BadRequest(
+                                message=f"Campo inexistente.",
+                                errors={
+                                    f"{field_name}": "Este campo não existe no modelo."
+                                },
+                            )
 
                         if not isinstance(value, (list, QuerySet)):
                             raise BadRequest(
@@ -146,10 +144,7 @@ class Repository:
                         else:
                             related_objects = value
 
-                        if field:
-                            getattr(instance, field_name).set(related_objects)
-                        else:
-                            related_manager.set(related_objects)
+                        getattr(instance, field_name).set(related_objects)
 
             except ValidationError as e:
                 raise BadRequest(errors=self._format_validation_errors(e))
@@ -176,18 +171,17 @@ class Repository:
             try:
                 field = self.model._meta.get_field(field_name)
 
-                if isinstance(field, ManyToManyField):
+                if isinstance(field, (ManyToManyRel, ManyToManyField)):
                     many_to_many_data[field_name] = value
-                    continue
+
             except FieldDoesNotExist:
-                pass
+                raise BadRequest(
+                    message=f"Campo inexistente.",
+                    errors={f"{field_name}": "Este campo não existe no modelo."},
+                )
 
-            if self._is_reverse_m2m(field_name):
-                many_to_many_data[field_name] = value
-
-        for field_name in many_to_many_data:
-            if field_name in data:
-                del data[field_name]
+        for key in many_to_many_data.keys():
+            del data[key]
 
         instance = self.model(**data)
         self._save(instance, many_to_many_data)
@@ -241,20 +235,17 @@ class Repository:
         for key, value in data.items():
             field_name = key[:-3] if key.endswith("_id") else key
 
-            is_m2m = False
-
             try:
                 field = instance._meta.get_field(field_name)
 
-                if isinstance(field, ManyToManyField):
-                    is_m2m = True
+                if isinstance(field, ManyToManyRel):
+                    many_to_many_data[field_name] = value
 
             except FieldDoesNotExist:
-                is_m2m = self._is_reverse_m2m(field_name)
-
-            if is_m2m:
-                many_to_many_data[field_name] = value
-                continue
+                raise BadRequest(
+                    message=f"Campo inexistente.",
+                    errors={f"{field_name}": "Este campo não existe no modelo."},
+                )
 
             if field_name in editable_fields:
                 try:
