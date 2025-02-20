@@ -173,10 +173,10 @@ class Serializer(SerializerInterface):
 class SerializerFactory:
     @staticmethod
     def get_serializer(serializer):
-        if issubclass(serializer, Schema):
+        if isinstance(serializer, type) and issubclass(serializer, Schema):
             return MarshmallowSerializerAdapter(serializer)
 
-        if isinstance(serializer, Serializer):
+        if isinstance(serializer, object) and isinstance(serializer, Serializer):
             return serializer
 
         raise TypeError(
