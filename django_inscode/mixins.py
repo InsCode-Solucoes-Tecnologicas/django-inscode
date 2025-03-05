@@ -228,9 +228,6 @@ class ViewRetrieveModelMixin:
         """
         filter_kwargs = filter_kwargs or {}
 
-        if "page" in filter_kwargs:
-            del filter_kwargs["page"]
-
         context = self.get_context(self.request)
 
         return self.service.perform_action(
@@ -289,14 +286,17 @@ class ViewRetrieveModelMixin:
             JsonResponse: Resposta JSON contendo os resultados paginados e metadados de paginação.
         """
         filter_class = self.get_filter_class()
-        page_number = int(request.GET.get("page", "1"))
+        query_dict = request.GET.copy()
+        page = query_dict.pop("page", "1")
 
         if filter_class is not None:
             queryset = self.get_queryset()
-            filterset = filter_class(request.GET, queryset=queryset)
+            filterset = filter_class(query_dict, queryset=queryset)
             queryset = filterset.qs
         else:
-            queryset = self.get_queryset(filter_kwargs=request.GET.dict())
+            queryset = self.get_queryset(filter_kwargs=query_dict.dict())
+
+        page_number = int(page)
 
         paginated_queryset = self.paginate_queryset(
             queryset=queryset, page_number=page_number
