@@ -154,7 +154,7 @@ class ContentTypeHandlerMixin:
             files = {key: request.FILES[key] for key in request.FILES}
             return {**data, **files}
         else:
-            raise ValueError("Formato de conteúdo não suportado.")
+            return {}
 
 
 class ViewCreateModelMixin(ContentTypeHandlerMixin):
