@@ -289,7 +289,7 @@ class ViewRetrieveModelMixin:
             JsonResponse: Resposta JSON contendo os resultados paginados e metadados de paginação.
         """
         filter_class = self.get_filter_class()
-        page = request.GET.pop("page", default=1)
+        page_number = int(request.GET.get("page", "1"))
 
         if filter_class is not None:
             queryset = self.get_queryset()
@@ -297,8 +297,6 @@ class ViewRetrieveModelMixin:
             queryset = filterset.qs
         else:
             queryset = self.get_queryset(filter_kwargs=request.GET.dict())
-
-        page_number = int(page)
 
         paginated_queryset = self.paginate_queryset(
             queryset=queryset, page_number=page_number
