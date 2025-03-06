@@ -287,7 +287,7 @@ class ViewRetrieveModelMixin:
         """
         filter_class = self.get_filter_class()
         query_dict = request.GET.copy()
-        page = query_dict.pop("page", "1")
+        page = query_dict.pop("page", "1")[0]
 
         if filter_class is not None:
             queryset = self.get_queryset()
