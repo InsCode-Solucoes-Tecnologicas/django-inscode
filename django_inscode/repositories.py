@@ -238,7 +238,7 @@ class Repository:
             try:
                 field = instance._meta.get_field(field_name)
 
-                if isinstance(field, ManyToManyRel):
+                if isinstance(field, (ManyToManyRel, ManyToManyField)):
                     many_to_many_data[field_name] = value
 
             except FieldDoesNotExist:
@@ -250,6 +250,9 @@ class Repository:
             if field_name in editable_fields:
                 try:
                     field_object = instance._meta.get_field(field_name)
+
+                    if isinstance(field_object, (ManyToManyField, ManyToManyRel)):
+                        continue
 
                     if field_object.is_relation and field_object.many_to_one:
                         if value is None:
@@ -280,6 +283,8 @@ class Repository:
                         },
                     )
 
+        print("aqui sem erro")
+        print(many_to_many_data)
         self._save(instance, many_to_many_data)
         return instance
 
