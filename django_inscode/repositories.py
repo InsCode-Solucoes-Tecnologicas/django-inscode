@@ -283,8 +283,6 @@ class Repository:
                         },
                     )
 
-        print("aqui sem erro")
-        print(many_to_many_data)
         self._save(instance, many_to_many_data)
         return instance
 
