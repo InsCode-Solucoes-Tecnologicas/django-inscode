@@ -1,10 +1,13 @@
 from . import mixins
 from .repositories import Repository
 
-from typing import TypeVar, Dict
+from typing import Dict, Optional, Any, Literal
 from abc import ABC, abstractmethod
 
-T = TypeVar("T", bound=Repository)
+from django.db.models import Model
+
+Data = Dict[str, Any]
+Action = Literal["create", "read", "update", "delete", "list", "list_all"]
 
 
 class OrchestratorService(ABC):
@@ -45,7 +48,7 @@ class GenericModelService:
         repository (Repository): O repositório associado ao modelo.
     """
 
-    def __init__(self, repository: T):
+    def __init__(self, repository: Repository):
         """
         Inicializa o serviço com o repositório associado.
 
@@ -63,7 +66,7 @@ class GenericModelService:
         """
         return self.repository
 
-    def validate(self, data: Dict, instance=None):
+    def validate(self, data: Data, instance: Optional[Model] = None) -> Optional[Data]:
         """
         Valida os dados fornecidos durante uma ação de criação ou atualização.
 
@@ -74,12 +77,16 @@ class GenericModelService:
             data (Dict): Dados fornecidos para validação.
             instance (Model, optional): Instância em atualização (caso aplicável).
 
+        Returns:
+            None se nenhuma validação for necessária para modificar dados ou validated_data
+            caso o usuário modifique os dados e retorne um novo dicionário "limpo".
+
         Raises:
             ValidationError: Se os dados não forem válidos.
         """
-        pass
+        return data
 
-    def perform_action(self, action: str, *args, **kwargs):
+    def perform_action(self, action: Action, *args, **kwargs):
         """
         Executa uma ação no serviço de modelo.
 
@@ -88,7 +95,7 @@ class GenericModelService:
         validações sejam executadas antes das operações.
 
         Args:
-            action (str): A ação a ser realizada (e.g., 'create', 'read', 'update', 'delete').
+            action (str): A ação a ser realizada (e.g., 'create', 'read', 'update', 'delete', 'list' e 'list_all'\).
             *args: Argumentos posicionais necessários para a ação.
             **kwargs: Argumentos nomeados adicionais (e.g., 'data' para criação/atualização).
 
@@ -104,10 +111,13 @@ class GenericModelService:
         data = kwargs.get("data", {})
         filter_kwargs = kwargs.get("filter_kwargs", {})
         context = kwargs.get("context", {})
+        pk = args[0]
 
         if action == "create" and isinstance(self, mixins.ServiceCreateMixin):
-            self.validate(data)
-            return self.create(data, context)
+            validated_data: Optional[Data] = self.validate(data)
+            return self.create(
+                validated_data if validated_data is not None else data, context
+            )
         elif action == "read" and isinstance(self, mixins.ServiceReadMixin):
             return self.read(*args, context=context)
         elif action == "list_all" and isinstance(self, mixins.ServiceReadMixin):
@@ -115,9 +125,13 @@ class GenericModelService:
         elif action == "list" and isinstance(self, mixins.ServiceReadMixin):
             return self.list(context=context, **filter_kwargs)
         elif action == "update" and isinstance(self, mixins.ServiceUpdateMixin):
-            instance = self.read(*args, context=context)
-            self.validate(data, instance=instance)
-            return self.update(*args, data=data, context=context)
+            instance = self.repository.read(pk)
+            validated_data: Optional[Data] = self.validate(data, instance=instance)
+            return self.update(
+                *args,
+                data=validated_data if validated_data is not None else data,
+                context=context,
+            )
         elif action == "delete" and isinstance(self, mixins.ServiceDeleteMixin):
             return self.delete(*args, context=context)
         else:

@@ -1,5 +1,5 @@
 from uuid import UUID
-from typing import Dict, Any, TypeVar, Optional, Union
+from typing import Dict, Any, Optional, ClassVar
 
 from django.http import HttpRequest, JsonResponse
 from django.db.models import QuerySet, Model
@@ -8,11 +8,6 @@ from django_filters import FilterSet
 
 from . import settings
 from . import exceptions
-
-import json
-
-t_model = TypeVar("t_model", bound=Model)
-t_filter = TypeVar("t_filter", bound=FilterSet)
 
 
 class ServiceCreateMixin:
@@ -23,7 +18,7 @@ class ServiceCreateMixin:
         create: Cria uma nova instância do modelo.
     """
 
-    def create(self, data: Dict, context: Dict) -> t_model:
+    def create(self, data: Dict, context: Dict) -> Model:
         """
         Cria uma nova instância do modelo.
 
@@ -47,7 +42,7 @@ class ServiceReadMixin:
         list: Lista instâncias filtradas do modelo.
     """
 
-    def read(self, id: UUID | int, context: Dict) -> t_model:
+    def read(self, id: UUID | int, context: Dict) -> Model:
         """
         Lê uma instância específica pelo ID.
 
@@ -61,7 +56,7 @@ class ServiceReadMixin:
         model_repository = self.get_model_repository()
         return model_repository.read(id)
 
-    def list(self, context: Dict, **kwargs) -> QuerySet[t_model]:
+    def list(self, context: Dict, **kwargs) -> QuerySet[Model]:
         """
         Lista instâncias filtradas do modelo.
 
@@ -84,7 +79,7 @@ class ServiceUpdateMixin:
         update: Atualiza uma instância específica pelo ID.
     """
 
-    def update(self, id: UUID | int, data: Dict, context: Dict) -> t_model:
+    def update(self, id: UUID | int, data: Dict, context: Dict) -> Model:
         """
         Atualiza uma instância específica pelo ID.
 
@@ -123,41 +118,7 @@ class ServiceDeleteMixin:
         return model_repository.delete(id)
 
 
-class ContentTypeHandlerMixin:
-    """
-    Mixin para lidar com diferentes tipos de conteúdo em requisições HTTP.
-
-    Métodos:
-        parse_request_data: Analisa os dados da requisição com base no tipo de conteúdo.
-    """
-
-    def parse_request_data(self, request) -> Dict[str, Any]:
-        """
-        Analisa os dados da requisição com base no tipo de conteúdo.
-
-        Args:
-            request (HttpRequest): Objeto da requisição HTTP.
-
-        Returns:
-            Dict[str, Any]: Dados analisados da requisição.
-
-        Raises:
-            ValueError: Se o formato do conteúdo não for suportado ou se o JSON for inválido.
-        """
-        if request.content_type == "application/json":
-            try:
-                return json.loads(request.body) if request.body else {}
-            except json.JSONDecodeError:
-                raise ValueError("JSON inválido na requisição.")
-        elif request.content_type.startswith("multipart/form-data"):
-            data = request.POST.dict()
-            files = {key: request.FILES[key] for key in request.FILES}
-            return {**data, **files}
-        else:
-            return {}
-
-
-class ViewCreateModelMixin(ContentTypeHandlerMixin):
+class ViewCreateModelMixin:
     """
     Mixin para ação de criação (`create`) em uma view baseada em classe.
 
@@ -178,10 +139,7 @@ class ViewCreateModelMixin(ContentTypeHandlerMixin):
         Raises:
             exceptions.BadRequest: Se os dados enviados forem inválidos ou ausentes.
         """
-        try:
-            data = self.parse_request_data(request)
-        except ValueError as e:
-            raise exceptions.BadRequest(errors=str(e))
+        data = request.data
 
         self.verify_fields(data)
 
@@ -202,10 +160,10 @@ class ViewRetrieveModelMixin:
         get: Decide entre `retrieve` ou `list` com base na presença de um identificador.
     """
 
-    paginate_by: int = settings.DEFAULT_PAGINATED_BY
-    filter_class: t_filter = None
+    paginate_by: ClassVar[int] = settings.DEFAULT_PAGINATED_BY
+    filter_class: ClassVar[FilterSet] = None
 
-    def get_filter_class(self) -> Union[FilterSet, None]:
+    def get_filter_class(self) -> Optional[FilterSet]:
         """
         Retorna a classe de filtro caso esta esteja especificada.
         """
@@ -336,7 +294,7 @@ class ViewRetrieveModelMixin:
         return self.list(request, *args, **kwargs)
 
 
-class ViewUpdateModelMixin(ContentTypeHandlerMixin):
+class ViewUpdateModelMixin:
     """
     Mixin para atualizar parcialmente ou completamente uma instância em uma view baseada em classe.
 
@@ -366,10 +324,7 @@ class ViewUpdateModelMixin(ContentTypeHandlerMixin):
         if not obj_id:
             raise exceptions.BadRequest("Nenhum identificador especificado.")
 
-        try:
-            data = self.parse_request_data(request)
-        except ValueError as e:
-            raise exceptions.BadRequest(errors=str(e))
+        data = request.data
 
         context = self.get_context(request)
         obj = self.service.perform_action("update", obj_id, data=data, context=context)
@@ -406,7 +361,7 @@ class ViewUpdateModelMixin(ContentTypeHandlerMixin):
         Raises:
             exceptions.BadRequest: Se os campos obrigatórios não forem fornecidos ou forem inválidos.
         """
-        data = json.loads(request.body)
+        data = request.data
         self.verify_fields(data)
         return self._update(request, *args, **kwargs)
 
