@@ -111,7 +111,6 @@ class GenericModelService:
         data = kwargs.get("data", {})
         filter_kwargs = kwargs.get("filter_kwargs", {})
         context = kwargs.get("context", {})
-        pk = args[0]
 
         if action == "create" and isinstance(self, mixins.ServiceCreateMixin):
             validated_data: Optional[Data] = self.validate(data)
@@ -125,6 +124,7 @@ class GenericModelService:
         elif action == "list" and isinstance(self, mixins.ServiceReadMixin):
             return self.list(context=context, **filter_kwargs)
         elif action == "update" and isinstance(self, mixins.ServiceUpdateMixin):
+            pk = args[0]
             instance = self.repository.read(pk)
             validated_data: Optional[Data] = self.validate(data, instance=instance)
             return self.update(
