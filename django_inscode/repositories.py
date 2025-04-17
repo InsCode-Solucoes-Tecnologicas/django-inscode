@@ -1,5 +1,5 @@
 from django.db import transaction
-from django.db.models import Model, QuerySet, BaseManager
+from django.db.models import Model, QuerySet, Manager
 from django.utils.translation import gettext as _
 from django.core.exceptions import (
     ValidationError,
@@ -324,7 +324,7 @@ class Repository:
         return self.model.objects.filter(**kwargs)
 
     @property
-    def manager(self) -> BaseManager[Model]:
+    def manager(self) -> Manager[Model]:
         """
         Retorna o manager para consultas mais complexas. Equivalente a acessar Model.objects
 
