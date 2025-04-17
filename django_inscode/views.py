@@ -2,7 +2,7 @@ from django.views import View
 from django.core.exceptions import ImproperlyConfigured
 from django.http import HttpRequest, JsonResponse
 
-from typing import Set, Dict, Any, List, TypeVar, Type, Union
+from typing import Set, Dict, Any, List, Union, ClassVar
 
 from . import mixins
 from . import exceptions
@@ -11,11 +11,11 @@ from .permissions import BasePermission
 from .services import GenericModelService, OrchestratorService
 from .serializers import SerializerInterface, SerializerFactory
 
-t_permission = TypeVar("t_permission", bound=BasePermission)
-t_generic_model_service = TypeVar("t_generic_model_service", bound=GenericModelService)
-t_orchestrator_service = TypeVar("t_orchestrator_service", bound=OrchestratorService)
-t_serializer = TypeVar("t_serializer", bound=SerializerInterface)
-t_service = Union[t_generic_model_service, t_orchestrator_service]
+import json
+
+Service = Union[GenericModelService, OrchestratorService]
+Context = Dict[str, Any]
+Data = Dict[str, Any]
 
 
 class GenericView(View):
@@ -26,14 +26,14 @@ class GenericView(View):
     serviços e validações, servindo como base para outras views.
 
     Attributes:
-        service (t_service): Serviço associado à view.
-        permissions_classes (List[Type[t_permission]]): Lista de classes de permissão.
+        service (Service): Serviço associado à view.
+        permissions_classes (List[Type[BasePermission]]): Lista de classes de permissão.
         fields (List[str]): Lista de campos permitidos na view.
     """
 
-    service: t_service = None
-    permissions_classes: List[Type[t_permission]] = None
-    fields: List[str] = []
+    service: ClassVar[Service] = None
+    permissions_classes: ClassVar[List[BasePermission]] = None
+    fields: ClassVar[List[str]] = []
 
     def __init__(self, **kwargs) -> None:
         """
@@ -44,6 +44,31 @@ class GenericView(View):
         """
         super().__init__(**kwargs)
         self._validate_required_attributes()
+
+    def _parse_request_data(self, request: HttpRequest) -> Dict[str, Any]:
+        """
+        Analisa os dados da requisição com base no tipo de conteúdo.
+
+        Args:
+            request (HttpRequest): Objeto da requisição HTTP.
+
+        Returns:
+            Dict[str, Any]: Dados analisados da requisição.
+
+        Raises:
+            ValueError: Se o formato do conteúdo não for suportado ou se o JSON for inválido.
+        """
+        if request.content_type == "application/json":
+            try:
+                return json.loads(request.body) if request.body else {}
+            except json.JSONDecodeError:
+                raise ValueError("JSON inválido na requisição.")
+        elif request.content_type.startswith("multipart/form-data"):
+            data = request.POST.dict()
+            files = {key: request.FILES[key] for key in request.FILES}
+            return {**data, **files}
+        else:
+            return {}
 
     def _validate_required_attributes(self) -> None:
         """
@@ -63,16 +88,16 @@ class GenericView(View):
                 f"{', '.join(missing_attributes)}"
             )
 
-    def get_service(self) -> t_service:
+    def get_service(self) -> Service:
         """
         Retorna o serviço associado à view.
 
         Returns:
-            t_service: Serviço associado.
+            Service: Serviço associado.
         """
         return self.service
 
-    def get_context(self, request) -> Dict[str, Any]:
+    def get_context(self, request) -> Context:
         """
         Retorna o contexto adicional para operações no serviço.
 
@@ -80,7 +105,7 @@ class GenericView(View):
             request (HttpRequest): Objeto da requisição HTTP.
 
         Returns:
-            Dict[str, Any]: Contexto adicional com informações do usuário, sessão e view.
+            Context: Contexto adicional com informações do usuário, sessão e view.
         """
         return {
             "user": request.user,
@@ -131,7 +156,7 @@ class GenericView(View):
         """
         return self.fields or []
 
-    def verify_fields(self, data: Dict) -> None:
+    def verify_fields(self, data: Data) -> None:
         """Verifica se todos os campos obrigatórios estão presentes nos dados."""
         missing_fields = set(self.get_fields()) - set(data.keys())
 
@@ -155,6 +180,14 @@ class GenericView(View):
         Raises:
             exceptions.Forbidden: Se as permissões forem negadas.
         """
+        if not hasattr(request, "data"):
+            try:
+                request.data = self._parse_request_data(request)
+            except Exception as e:
+                raise exceptions.BadRequest(
+                    message="Formato de requisição inválido", errors=str(e)
+                )
+
         self.check_permissions(request)
 
         if hasattr(self, "get_object") and callable(self.get_object):
@@ -167,7 +200,7 @@ class GenericView(View):
         return super().dispatch(request, *args, **kwargs)
 
 
-class GenericOrchestratorView(GenericView, mixins.ContentTypeHandlerMixin):
+class GenericOrchestratorView(GenericView):
     """
     Classe base para views que lidam com lógica orquestrada.
 
@@ -175,12 +208,12 @@ class GenericOrchestratorView(GenericView, mixins.ContentTypeHandlerMixin):
     repositórios ou lógicas de negócio avançadas.
 
     Attributes:
-        service (t_orchestrator_service): Serviço orquestrador associado à view.
-        permissions_classes (List[Type[t_permission]]): Lista de classes de permissão.
+        service (OrchestratorService): Serviço orquestrador associado à view.
+        permissions_classes (List[Type[BasePermission]]): Lista de classes de permissão.
         fields (List[str]): Lista de campos permitidos na view.
     """
 
-    service: t_orchestrator_service = None
+    service: ClassVar[OrchestratorService] = None
 
     def execute(self, request: HttpRequest, *args, **kwargs) -> JsonResponse:
         """
@@ -198,11 +231,7 @@ class GenericOrchestratorView(GenericView, mixins.ContentTypeHandlerMixin):
             exceptions.BadRequest: Se os dados enviados forem inválidos.
             exceptions.Forbidden: Se as permissões forem negadas.
         """
-        try:
-            data = self.parse_request_data(request)
-        except ValueError as e:
-            raise exceptions.BadRequest(errors=str(e))
-
+        data = request.data
         self.verify_fields(data)
         context = self.get_context(request)
         service = self.get_service()
@@ -223,16 +252,15 @@ class GenericModelView(GenericView):
     É projetada para ser estendida por outras views que necessitam de lógica específica.
 
     Attributes:
-        serializer (t_serializer): Classe de serializador associada à view.
-        lookup_field (str): Nome do campo usado para identificar instâncias específicas. Default é "pk".
-        paginate_by (int): Número de itens por página para paginação. Default é definido em `settings.DEFAULT_PAGINATED_BY`.
-        service (t_service): Serviço associado à view.
-        permissions_classes (List[Type[t_permission]]): Lista de classes de permissão.
+        serializer (SerializerInterface): Classe de serializador associada à view.
+        service (GenericModelService): Serviço associado à view.
+        permissions_classes (List[Type[BasePermission]]): Lista de classes de permissão.
         fields (List[str]): Lista de campos permitidos na view.
     """
 
-    serializer: t_serializer = None
-    lookup_field: str = "pk"
+    serializer: ClassVar[SerializerInterface] = None
+    service: ClassVar[GenericModelService] = None
+    lookup_field: ClassVar[str] = "pk"
 
     def _validate_required_attributes(self):
         """
@@ -379,11 +407,11 @@ class ModelView(
     Métodos herdados incluem validação de campos, paginação e serialização automática.
 
     Attributes:
-        serializer (t_serializer): Classe de serializador associada à view.
+        serializer (SerializeInterface): Classe de serializador associada à view.
         lookup_field (str): Nome do campo usado para identificar instâncias específicas. Default é "pk".
         paginate_by (int): Número de itens por página para paginação. Default é definido em `settings.DEFAULT_PAGINATED_BY`.
-        service (t_service): Serviço associado à view.
-        permissions_classes (List[Type[t_permission]]): Lista de classes de permissão.
+        service (GenericModelService): Serviço associado à view.
+        permissions_classes (List[Type[BasePermission]]): Lista de classes de permissão.
         fields (List[str]): Lista de campos permitidos na view.
     """
 

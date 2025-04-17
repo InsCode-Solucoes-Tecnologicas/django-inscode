@@ -1,16 +1,32 @@
 from dataclasses import fields, is_dataclass
-from typing import Any, Dict, List, Optional, Union, get_args, get_origin, Protocol
+from typing import (
+    Any,
+    Dict,
+    List,
+    Optional,
+    Union,
+    get_args,
+    get_origin,
+    Protocol,
+    Type,
+)
 from decimal import Decimal
 from uuid import UUID
+
 from django.db import models
 from django.core.files.base import File
+
 from marshmallow import Schema
+
+from .transports import Transport
 
 import datetime
 
+SerializedData = Dict[str, Any]
+
 
 class SerializerInterface(Protocol):
-    def serialize(self, obj) -> Dict[str, Any]: ...
+    def serialize(self, obj: Any) -> SerializedData: ...
 
 
 class MarshmallowSerializerAdapter(SerializerInterface):
@@ -18,10 +34,10 @@ class MarshmallowSerializerAdapter(SerializerInterface):
     Adaptador do serializador do marshmallow para a interface de SerializerInterface.
     """
 
-    def __init__(self, schema_class):
+    def __init__(self, schema_class: Type[Schema]):
         self.schema_class = schema_class
 
-    def serialize(self, obj):
+    def serialize(self, obj: Schema):
         return self.schema_class().dump(obj)
 
 
@@ -37,7 +53,7 @@ class Serializer(SerializerInterface):
         transport (Type[Transport]): Classe de transporte que define os campos e tipos para serialização.
     """
 
-    def __init__(self, model: models.Model, transport: Any):
+    def __init__(self, model: models.Model, transport: Type[Transport]):
         """
         Inicializa o serializador com o modelo e o transporte especificados.
 

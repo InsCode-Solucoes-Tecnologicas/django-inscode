@@ -1,5 +1,5 @@
 from django.db import transaction
-from django.db.models import Model, QuerySet
+from django.db.models import Model, QuerySet, BaseManager
 from django.utils.translation import gettext as _
 from django.core.exceptions import (
     ValidationError,
@@ -111,10 +111,7 @@ class Repository:
 
                         if all(isinstance(v, (int, UUID, str)) for v in value):
                             try:
-                                ids = [
-                                    UUID(str(v)) if isinstance(v, str) else v
-                                    for v in value
-                                ]
+                                ids = [str(v) for v in value]
 
                                 related_objects = related_model.objects.filter(
                                     pk__in=ids
@@ -325,6 +322,16 @@ class Repository:
             QuerySet[T]: Conjunto de resultados contendo as instâncias que atendem aos filtros.
         """
         return self.model.objects.filter(**kwargs)
+
+    @property
+    def manager(self) -> BaseManager[Model]:
+        """
+        Retorna o manager para consultas mais complexas. Equivalente a acessar Model.objects
+
+        Returns:
+            BaseManager[Model]: Base manager do modelo.
+        """
+        return self.model.objects
 
 
 __all__ = ["Repository"]
