@@ -1,5 +1,5 @@
 from django.db import transaction
-from django.db.models import Model, QuerySet, Manager
+from django.db.models import Model, QuerySet, Manager, Q
 from django.utils.translation import gettext as _
 from django.core.exceptions import (
     ValidationError,
@@ -7,6 +7,8 @@ from django.core.exceptions import (
     FieldDoesNotExist,
 )
 from django.db.models.fields.related import ManyToManyRel, ManyToManyField
+
+from django_softdelete.models import SoftDeleteModel
 
 from uuid import UUID
 from typing import TypeVar, List, Dict, Any
@@ -151,38 +153,60 @@ class Repository:
     def create(self, **data) -> T:
         """
         Cria uma nova instância no banco de dados.
-
         Args:
             **data: Dados para criar a instância.
-
         Returns:
             Model: Instância criada do modelo.
-
         Raises:
             BadRequest: Se houver problemas nos dados fornecidos.
             InternalServerError: Se ocorrer um erro inesperado durante a criação.
         """
-        many_to_many_data = {}
+        if issubclass(self.model, SoftDeleteModel):
+            self._handle_softdelete_uniqueness(data)
 
+        many_to_many_data = {}
         for field_name, value in data.items():
             try:
                 field = self.model._meta.get_field(field_name)
-
                 if isinstance(field, (ManyToManyRel, ManyToManyField)):
                     many_to_many_data[field_name] = value
-
             except FieldDoesNotExist:
                 raise BadRequest(
                     message=f"Campo inexistente.",
                     errors={f"{field_name}": "Este campo não existe no modelo."},
                 )
-
         for key in many_to_many_data.keys():
             del data[key]
-
         instance = self.model(**data)
         self._save(instance, many_to_many_data)
         return instance
+
+    def _handle_softdelete_uniqueness(self, data: dict):
+        """
+        Remove hard (definitivamente) objetos soft deleted que conflitam com campos únicos.
+        """
+        unique_fields = [
+            field.name for field in self.model._meta.fields
+            if getattr(field, 'unique', False)
+        ]
+        unique_together = [
+            tup for tup in getattr(self.model._meta, 'unique_together', [])
+        ]
+
+        query = Q()
+        for field in unique_fields:
+            if field in data:
+                query |= Q(**{field: data[field]})
+
+        for fields in unique_together:
+            if all(f in data for f in fields):
+                filters = {f: data[f] for f in fields}
+                query |= Q(**filters)
+
+        if query:
+            deleted_qs = self.model.deleted_objects.filter(query)
+            for obj in deleted_qs:
+                obj.hard_delete()
 
     def read(self, id: UUID | int) -> T:
         """

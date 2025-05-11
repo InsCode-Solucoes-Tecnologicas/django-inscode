@@ -28,7 +28,7 @@ def read(f):
 
 setup(
     name="django-inscode",
-    version="1.0.2",
+    version="1.1.0",
     description="Django framework da Inscode.",
     long_description=read("README.md"),
     long_description_content_type="text/markdown",
