@@ -7,6 +7,7 @@ from django.core.exceptions import (
     FieldDoesNotExist,
 )
 from django.db.models.fields.related import ManyToManyRel, ManyToManyField
+from django.apps import apps
 
 from django_softdelete.models import SoftDeleteModel
 
@@ -186,11 +187,12 @@ class Repository:
         Remove hard (definitivamente) objetos soft deleted que conflitam com campos únicos.
         """
         unique_fields = [
-            field.name for field in self.model._meta.fields
-            if getattr(field, 'unique', False)
+            field.name
+            for field in self.model._meta.fields
+            if getattr(field, "unique", False)
         ]
         unique_together = [
-            tup for tup in getattr(self.model._meta, 'unique_together', [])
+            tup for tup in getattr(self.model._meta, "unique_together", [])
         ]
 
         query = Q()
@@ -358,4 +360,17 @@ class Repository:
         return self.model.objects
 
 
-__all__ = ["Repository"]
+__REPOSITORIES = {model._meta.label: Repository(model) for model in apps.get_models()}
+
+
+def get_repository(model: str) -> Repository:
+    if not isinstance(model, str):
+        raise ValueError("model must be a string")
+
+    if not model in __REPOSITORIES.keys():
+        raise ValueError(f"model not registered in django apps: {model}")
+
+    return __REPOSITORIES[model]
+
+
+__all__ = ["Repository", "get_repository"]
