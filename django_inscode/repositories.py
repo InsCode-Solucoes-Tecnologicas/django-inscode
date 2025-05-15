@@ -166,6 +166,7 @@ class Repository:
             self._handle_softdelete_uniqueness(data)
 
         many_to_many_data = {}
+
         for field_name, value in data.items():
             try:
                 field = self.model._meta.get_field(field_name)
@@ -176,10 +177,14 @@ class Repository:
                     message=f"Campo inexistente.",
                     errors={f"{field_name}": "Este campo não existe no modelo."},
                 )
+
         for key in many_to_many_data.keys():
             del data[key]
+
         instance = self.model(**data)
+
         self._save(instance, many_to_many_data)
+
         return instance
 
     def _handle_softdelete_uniqueness(self, data: dict):
@@ -246,67 +251,56 @@ class Repository:
             InternalServerError: Para erros inesperados
         """
         instance = self.read(id)
+        meta = instance._meta
 
-        editable_fields = [
+        editable_fields = {
             field.name
-            for field in instance._meta.get_fields()
+            for field in meta.get_fields()
             if getattr(field, "editable", True)
-        ]
-
+        }
         many_to_many_data = {}
 
         for key, value in data.items():
             field_name = key[:-3] if key.endswith("_id") else key
 
             try:
-                field = instance._meta.get_field(field_name)
-
-                if isinstance(field, (ManyToManyRel, ManyToManyField)):
-                    many_to_many_data[field_name] = value
-
+                field = meta.get_field(field_name)
             except FieldDoesNotExist:
                 raise BadRequest(
-                    message=f"Campo inexistente.",
-                    errors={f"{field_name}": "Este campo não existe no modelo."},
+                    message=f"Campo '{field_name}' não existe no modelo.",
+                    errors={field_name: "Este campo não existe no modelo."},
                 )
 
-            if field_name in editable_fields:
-                try:
-                    field_object = instance._meta.get_field(field_name)
+            if isinstance(field, (ManyToManyField, ManyToManyRel)):
+                many_to_many_data[field_name] = value
+                continue
 
-                    if isinstance(field_object, (ManyToManyField, ManyToManyRel)):
-                        continue
+            if field_name not in editable_fields:
+                continue
 
-                    if field_object.is_relation and field_object.many_to_one:
-                        if value is None:
-                            setattr(instance, field_name, None)
-                        else:
-                            if isinstance(value, field_object.related_model):
-                                related_instance = value
-                            else:
-                                related_instance = (
-                                    field_object.related_model.objects.get(pk=value)
-                                )
-
-                            setattr(instance, field_name, related_instance)
-
+            try:
+                if field.is_relation and (field.many_to_one or field.one_to_one):
+                    if value is None:
+                        setattr(instance, field_name, None)
                     else:
-                        setattr(instance, field_name, value)
+                        related_model = field.related_model
+                        related_instance = (
+                            value
+                            if isinstance(value, related_model)
+                            else related_model.objects.get(pk=value)
+                        )
+                        setattr(instance, field_name, related_instance)
+                else:
+                    setattr(instance, field_name, value)
 
-                except ObjectDoesNotExist:
-                    raise BadRequest(
-                        message=f"Objeto relacionado não encontrado para o campo '{field_name}'",
-                        errors={f"{field_name}": "Referência inválida"},
-                    )
-                except FieldDoesNotExist:
-                    raise BadRequest(
-                        message=f"Campo inválido: '{field_name}'",
-                        errors={
-                            f"{field_name}": "Campo não existe",
-                        },
-                    )
+            except ObjectDoesNotExist:
+                raise BadRequest(
+                    message=f"Objeto relacionado não encontrado para o campo '{field_name}'.",
+                    errors={field_name: "Referência inválida"},
+                )
 
         self._save(instance, many_to_many_data)
+
         return instance
 
     def delete(self, id: UUID | int) -> None:
