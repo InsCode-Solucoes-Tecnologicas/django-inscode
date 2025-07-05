@@ -1,5 +1,9 @@
 from abc import ABC, abstractmethod
 
+from django.conf import settings
+from django.core.exceptions import ImproperlyConfigured
+from django.utils.module_loading import import_string
+
 from mozilla_django_oidc.auth import OIDCAuthenticationBackend
 
 from .exceptions import Unauthorized
@@ -30,8 +34,34 @@ class BaseAuthentication(ABC):
 
 class KeycloakBearerAuthentication(BaseAuthentication):
     """
-    Valida um token Bearer OIDC (Keycloak) presente no cabeçalho Authorization.
+    Valida um token Bearer OIDC (Keycloak) presente no cabeçalho Authorization,
+    usando o backend OIDC configurado nos settings do projeto.
     """
+
+    _oidc_backend = None
+
+    def _get_oidc_backend(self):
+        """
+        Localiza, carrega e instancia o backend OIDC a partir de settings.AUTHENTICATION_BACKENDS.
+        O resultado é armazenado em cache para requisições futuras.
+        """
+        if self._oidc_backend:
+            return self._oidc_backend
+
+        for backend_path in settings.AUTHENTICATION_BACKENDS:
+            try:
+                backend_class = import_string(backend_path)
+
+                if issubclass(backend_class, OIDCAuthenticationBackend):
+                    self.__class__._oidc_backend = backend_class()
+                    return self._oidc_backend
+            except ImportError:
+                continue
+
+        raise ImproperlyConfigured(
+            "Nenhum backend de autenticação que herde de 'OIDCAuthenticationBackend' foi encontrado "
+            "em settings.AUTHENTICATION_BACKENDS."
+        )
 
     def authenticate(self, request):
         auth_header = request.headers.get("Authorization")
@@ -40,14 +70,15 @@ class KeycloakBearerAuthentication(BaseAuthentication):
             return None
 
         token = auth_header.split(" ")[1]
-        oidc_backend = OIDCAuthenticationBackend()
+
+        oidc_backend = self._get_oidc_backend()
 
         try:
-            claims = oidc_backend.get_userinfo(access_token=token)
+            claims = oidc_backend.get_userinfo(token, None, None)
             user = self.get_or_create_user(oidc_backend, claims)
             return user
 
-        except Exception:
+        except Exception as e:
             raise Unauthorized("Token inválido ou expirado.")
 
     def get_or_create_user(self, backend, claims):
