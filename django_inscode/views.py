@@ -1,5 +1,6 @@
 from django.views import View
 from django.core.exceptions import ImproperlyConfigured
+from django.contrib.auth.models import AnonymousUser
 from django.http import HttpRequest, JsonResponse
 
 from typing import Set, Dict, Any, List, Union, ClassVar
@@ -10,6 +11,7 @@ from . import exceptions
 from .permissions import BasePermission
 from .services import GenericModelService, OrchestratorService
 from .serializers import SerializerInterface, SerializerFactory
+from .authentication import BaseAuthentication
 
 import json
 
@@ -34,6 +36,7 @@ class GenericView(View):
     service: ClassVar[Service] = None
     permissions_classes: ClassVar[List[BasePermission]] = None
     fields: ClassVar[List[str]] = []
+    authentication_classes: ClassVar[List[BaseAuthentication]] = []
 
     def __init__(self, **kwargs) -> None:
         """
@@ -44,6 +47,26 @@ class GenericView(View):
         """
         super().__init__(**kwargs)
         self._validate_required_attributes()
+
+    def perform_authentication(self, request) -> None:
+        """
+        Executa a autenticação iterando sobre as classes configuradas.
+        Popula request.user com o usuário autenticado ou AnonymousUser.
+        """
+        request.user = AnonymousUser()
+
+        if not self.authentication_classes:
+            return
+
+        for authenticator_class in self.authentication_classes:
+            authenticator = authenticator_class()
+            try:
+                user = authenticator.authenticate(request)
+                if user is not None:
+                    request.user = user
+                    return
+            except exceptions.Unauthorized as e:
+                raise exceptions.Unauthorized(str(e))
 
     def _parse_request_data(self, request: HttpRequest) -> Dict[str, Any]:
         """
@@ -180,6 +203,8 @@ class GenericView(View):
         Raises:
             exceptions.Forbidden: Se as permissões forem negadas.
         """
+        self.perform_authentication(request)
+
         if not hasattr(request, "data"):
             try:
                 request.data = self._parse_request_data(request)
