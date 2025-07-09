@@ -55,9 +55,6 @@ class GenericView(View):
         """
         request.user = AnonymousUser()
 
-        if not self.authentication_classes:
-            return
-
         for authenticator_class in self.authentication_classes:
             authenticator = authenticator_class()
             try:
@@ -203,7 +200,8 @@ class GenericView(View):
         Raises:
             exceptions.Forbidden: Se as permissões forem negadas.
         """
-        self.perform_authentication(request)
+        if self.authentication_classes:
+            self.perform_authentication(request)
 
         if not hasattr(request, "data"):
             try:
