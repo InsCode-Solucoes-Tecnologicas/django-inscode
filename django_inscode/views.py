@@ -3,7 +3,7 @@ from django.core.exceptions import ImproperlyConfigured
 from django.contrib.auth.models import AnonymousUser
 from django.http import HttpRequest, JsonResponse
 
-from typing import Set, Dict, Any, List, Union, ClassVar
+from typing import Set, Dict, Any, List, Union, ClassVar, Optional, Type
 
 from . import mixins
 from . import exceptions
@@ -13,8 +13,15 @@ from .services import GenericModelService, OrchestratorService
 from .serializers import SerializerInterface, SerializerFactory
 from .authentication import BaseAuthentication
 
+try:
+    from marshmallow import Schema, ValidationError
+except ImportError:
+    Schema = None
+    ValidationError = None
+
 import json
 
+Serializer = Union[Schema, SerializerInterface]
 Service = Union[GenericModelService, OrchestratorService]
 Context = Dict[str, Any]
 Data = Dict[str, Any]
@@ -30,13 +37,16 @@ class GenericView(View):
     Attributes:
         service (Service): Serviço associado à view.
         permissions_classes (List[Type[BasePermission]]): Lista de classes de permissão.
-        fields (List[str]): Lista de campos permitidos na view.
+        fields (List[str]): Lista de campos permitidos na view (validação simples).
+        input_schema (Optional[Type[Schema]]): Schema marshmallow para validação de entrada.
+            Se definido, tem prioridade sobre o campo 'fields'.
     """
 
     service: ClassVar[Service] = None
     permissions_classes: ClassVar[List[BasePermission]] = None
     fields: ClassVar[List[str]] = []
     authentication_classes: ClassVar[List[BaseAuthentication]] = []
+    input_schema: ClassVar[Optional[Type[Schema]]] = None
 
     def __init__(self, **kwargs) -> None:
         """
@@ -180,12 +190,64 @@ class GenericView(View):
         return self.fields or []
 
     def verify_fields(self, data: Data) -> None:
-        """Verifica se todos os campos obrigatórios estão presentes nos dados."""
+        """
+        Verifica se todos os campos obrigatórios estão presentes nos dados.
+
+        Se input_schema estiver definido, usa validação marshmallow.
+        Caso contrário, usa validação simples de campos.
+        """
+        if self.input_schema is not None:
+            self._validate_with_schema(data)
+        else:
+            self._validate_simple_fields(data)
+
+    def _validate_with_schema(self, data: Data) -> None:
+        """
+        Valida os dados usando o schema marshmallow definido.
+
+        Args:
+            data: Dados a serem validados
+
+        Raises:
+            exceptions.BadRequest: Se a validação falhar
+        """
+        if Schema is None:
+            raise exceptions.BadRequest(
+                message="Marshmallow não está disponível para validação",
+                errors={"schema": "Biblioteca marshmallow não instalada"},
+            )
+
+        try:
+            schema = self.input_schema()
+            validated_data = schema.load(data)
+            data.clear()
+            data.update(validated_data)
+        except ValidationError as e:
+            raise exceptions.BadRequest(
+                message="Dados de entrada inválidos", errors=e.messages
+            )
+        except Exception as e:
+            raise exceptions.BadRequest(
+                message="Erro durante validação dos dados",
+                errors={"validation": str(e)},
+            )
+
+    def _validate_simple_fields(self, data: Data) -> None:
+        """
+        Validação simples de campos (método original para compatibilidade).
+
+        Args:
+            data: Dados a serem validados
+
+        Raises:
+            exceptions.BadRequest: Se campos obrigatórios estiverem faltando
+        """
         missing_fields = set(self.get_fields()) - set(data.keys())
 
         if missing_fields:
             raise exceptions.BadRequest(
-                f"Campos obrigatórios faltando: {[', '.join(missing_fields)]}"
+                message=f"Campos obrigatórios faltando: {', '.join(missing_fields)}",
+                errors={field: "Campo obrigatório" for field in missing_fields},
             )
 
     def dispatch(self, request, *args, **kwargs):
@@ -283,7 +345,7 @@ class GenericModelView(GenericView):
         fields (List[str]): Lista de campos permitidos na view.
     """
 
-    serializer: ClassVar[SerializerInterface] = None
+    serializer: ClassVar[Serializer] = None
     service: ClassVar[GenericModelService] = None
     lookup_field: ClassVar[str] = "pk"
 
