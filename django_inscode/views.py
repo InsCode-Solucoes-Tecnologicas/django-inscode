@@ -2,6 +2,8 @@ from django.views import View
 from django.core.exceptions import ImproperlyConfigured
 from django.contrib.auth.models import AnonymousUser
 from django.http import HttpRequest, JsonResponse
+from django.utils.module_loading import import_string
+from django.conf import settings
 
 from typing import Set, Dict, Any, List, Union, ClassVar, Optional, Type
 
@@ -58,15 +60,24 @@ class GenericView(View):
         super().__init__(**kwargs)
         self._validate_required_attributes()
 
+        if not self.authentication_classes:
+            self.authentication_classes = self.get_default_authentication_classes()
+
+    def get_default_authentication_classes(self) -> List[BaseAuthentication]:
+        """
+        Retorna a lista de classes de autenticação padrão.
+
+        Se `authentication_classes` não estiver definido, retorna uma lista vazia.
+        """
+        class_paths = getattr(settings, "DEFAULT_AUTHENTICATION_CLASSES", [])
+        return [import_string(path) for path in class_paths]
+
     def perform_authentication(self, request) -> None:
         """
         Executa a autenticação iterando sobre as classes configuradas.
         Popula request.user com o usuário autenticado ou AnonymousUser.
         """
         request.user = AnonymousUser()
-
-        if not self.authentication_classes:
-            return
 
         for authenticator_class in self.authentication_classes:
             authenticator = authenticator_class()
@@ -265,7 +276,8 @@ class GenericView(View):
         Raises:
             exceptions.Forbidden: Se as permissões forem negadas.
         """
-        self.perform_authentication(request)
+        if self.authentication_classes:
+            self.perform_authentication(request)
 
         if not hasattr(request, "data"):
             try:
