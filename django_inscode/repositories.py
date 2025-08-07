@@ -261,15 +261,20 @@ class Repository:
         many_to_many_data = {}
 
         for key, value in data.items():
+            original_field_name = key
             field_name = key[:-3] if key.endswith("_id") else key
 
             try:
-                field = meta.get_field(field_name)
+                field = meta.get_field(original_field_name)
+                field_name = original_field_name
             except FieldDoesNotExist:
-                raise BadRequest(
-                    message=f"Campo '{field_name}' não existe no modelo.",
-                    errors={field_name: "Este campo não existe no modelo."},
-                )
+                try:
+                    field = meta.get_field(field_name)
+                except FieldDoesNotExist:
+                    raise BadRequest(
+                        message=f"Campo '{field_name}' não existe no modelo.",
+                        errors={field_name: "Este campo não existe no modelo."},
+                    )
 
             if isinstance(field, (ManyToManyField, ManyToManyRel)):
                 many_to_many_data[field_name] = value
