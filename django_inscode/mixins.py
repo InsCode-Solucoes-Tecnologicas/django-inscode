@@ -141,7 +141,7 @@ class ViewCreateModelMixin:
         """
         data = request.data
 
-        self.verify_fields(data)
+        self.verify_fields(data, request)
 
         context = self.get_context(request)
         obj = self.service.perform_action("create", data=data, context=context)
@@ -344,6 +344,8 @@ class ViewUpdateModelMixin:
         Returns:
             JsonResponse: Resposta JSON contendo os dados da instância atualizada.
         """
+        data = request.data
+        self.verify_fields(data, request)
         return self._update(request, *args, **kwargs)
 
     def put(self, request: HttpRequest, *args, **kwargs) -> JsonResponse:
@@ -362,7 +364,7 @@ class ViewUpdateModelMixin:
             exceptions.BadRequest: Se os campos obrigatórios não forem fornecidos ou forem inválidos.
         """
         data = request.data
-        self.verify_fields(data)
+        self.verify_fields(data, request)
         return self._update(request, *args, **kwargs)
 
 
