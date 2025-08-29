@@ -6,6 +6,8 @@ from django.db.models import QuerySet, Model
 
 from django_filters import FilterSet
 
+from math import ceil
+
 from . import settings
 from . import exceptions
 
@@ -262,10 +264,13 @@ class ViewRetrieveModelMixin:
 
         serialized_data = [self.serialize_object(obj) for obj in paginated_queryset]
 
+        total_items = queryset.count()
+        
         response_data = {
             "pagination": {
                 "current_page": page_number,
-                "total_items": queryset.count(),
+                "total_items": total_items,
+                "total_pages": ceil(total_items/self.paginate_by),
                 "has_next": len(paginated_queryset) == self.paginate_by,
                 "has_previous": page_number > 1,
             },
