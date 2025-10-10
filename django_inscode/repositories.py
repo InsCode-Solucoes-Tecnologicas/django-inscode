@@ -1,3 +1,4 @@
+from abc import ABC, abstractmethod
 from django.db import transaction
 from django.db.models import Model, QuerySet, Manager, Q
 from django.utils.translation import gettext as _
@@ -12,14 +13,136 @@ from django.apps import apps
 from django_softdelete.models import SoftDeleteModel
 
 from uuid import UUID
-from typing import TypeVar, List, Dict, Any
+from typing import TypeVar, List, Dict, Any, Generic
 
 from .exceptions import BadRequest, InternalServerError, NotFound
 
 T = TypeVar("T", bound=Model)
 
 
-class Repository:
+class IRepository(ABC, Generic[T]):
+    """
+    Interface abstrata que define o contrato para repositórios.
+
+    Esta interface estabelece os métodos que todos os repositórios devem implementar,
+    garantindo consistência e aderência aos princípios SOLID (Interface Segregation Principle).
+
+    Attributes:
+        model (Model): O modelo Django associado ao repositório.
+    """
+
+    @abstractmethod
+    def __init__(self, model: T) -> None:
+        """
+        Inicializa o repositório com o modelo Django associado.
+
+        Args:
+            model (Model): O modelo Django que será manipulado pelo repositório.
+        """
+        pass
+
+    @abstractmethod
+    def create(self, **data) -> T:
+        """
+        Cria uma nova instância no banco de dados.
+
+        Args:
+            **data: Dados para criar a instância.
+
+        Returns:
+            Model: Instância criada do modelo.
+
+        Raises:
+            BadRequest: Se houver problemas nos dados fornecidos.
+            InternalServerError: Se ocorrer um erro inesperado durante a criação.
+        """
+        pass
+
+    @abstractmethod
+    def read(self, id: UUID | int) -> T:
+        """
+        Busca uma instância existente no banco de dados via ID.
+
+        Args:
+            id (UUID | int): Identificador da instância.
+
+        Returns:
+            Model: Instância encontrada do modelo.
+
+        Raises:
+            NotFound: Se a instância não for encontrada.
+        """
+        pass
+
+    @abstractmethod
+    def update(self, id: UUID | int, **data) -> T:
+        """
+        Atualiza uma instância existente no banco de dados.
+
+        Args:
+            id (UUID | int): Identificador da instância a ser atualizada.
+            **data: Dados para atualização da instância.
+
+        Returns:
+            Model: Instância atualizada do modelo.
+
+        Raises:
+            BadRequest: Se houver problemas nos dados fornecidos.
+            NotFound: Se a instância não for encontrada.
+            InternalServerError: Se ocorrer um erro inesperado durante a atualização.
+        """
+        pass
+
+    @abstractmethod
+    def delete(self, id: UUID | int) -> None:
+        """
+        Exclui uma instância existente no banco de dados via ID.
+
+        Args:
+            id (UUID | int): Identificador da instância a ser excluída.
+
+        Raises:
+            NotFound: Se a instância não for encontrada.
+            InternalServerError: Se ocorrer um erro inesperado durante a exclusão.
+        """
+        pass
+
+    @abstractmethod
+    def list_all(self) -> QuerySet[T]:
+        """
+        Retorna todas as instâncias do modelo associadas ao repositório.
+
+        Returns:
+            QuerySet[T]: Conjunto de resultados contendo todas as instâncias do modelo.
+        """
+        pass
+
+    @abstractmethod
+    def filter(self, **kwargs) -> QuerySet[T]:
+        """
+        Retorna todas as instâncias do modelo que atendem aos critérios de filtro fornecidos.
+
+        Args:
+            **kwargs: Argumentos de filtro para a consulta.
+
+        Returns:
+            QuerySet[T]: Conjunto de resultados contendo as instâncias que atendem aos filtros.
+        """
+        pass
+
+    @property
+    @abstractmethod
+    def manager(self) -> Manager[Model]:
+        """
+        Retorna o manager para consultas mais complexas.
+
+        Returns:
+            Manager[Model]: Manager do modelo para consultas avançadas.
+        """
+        pass
+
+
+class Repository(IRepository):
     """
     Repositório genérico para manipulação de modelos Django.
 
@@ -368,4 +491,4 @@ def get_repository(model: str) -> Repository:
     return __REPOSITORIES[model]
 
 
-__all__ = ["Repository", "get_repository"]
+__all__ = ["IRepository", "Repository", "get_repository"]
