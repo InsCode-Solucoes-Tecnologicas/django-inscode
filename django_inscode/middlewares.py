@@ -1,72 +1,84 @@
 from django.http import JsonResponse
+from django.settings import DEBUG # type: ignore
+
+from typing import Callable
 
 from .exceptions import APIException
 
 
 class ExceptionHandlingMiddleware:
     """
-    Middleware para capturar e processar exceções, retornando respostas no formato JSON.
+    Middleware para capturar exceções e convertê-las em respostas JSON no formato da API.
 
-    Este middleware intercepta exceções levantadas durante o processamento de uma requisição
-    e as converte em respostas JSON apropriadas. Exceções personalizadas que herdam de
-    `APIException` são tratadas com seus respectivos códigos de status e mensagens.
-    Exceções inesperadas retornam um erro genérico com código HTTP 500.
-
-    Attributes:
-        get_response (callable): Função ou método que processa a requisição e retorna a resposta.
+    Suporta uma API declarativa para mapear exceções do domínio para APIExceptions:
+        ExceptionHandlingMiddleware.when(DomainError).then_raise(APIException(...))
+        ExceptionHandlingMiddleware.when(ValueError).then_raise(lambda e: APIException(...))
     """
 
-    def __init__(self, get_response):
-        """
-        Inicializa o middleware com a função de processamento da requisição.
+    exception_mappings: dict[type, Callable] = {}
 
-        Args:
-            get_response (callable): Função ou método que processa a requisição.
-        """
+    def __init__(self, get_response):
         self.get_response = get_response
 
     def __call__(self, request):
-        """
-        Processa a requisição capturando exceções, se ocorrerem.
-
-        Args:
-            request (HttpRequest): Objeto da requisição HTTP.
-
-        Returns:
-            HttpResponse: Resposta gerada pelo processamento da requisição ou pela captura de uma exceção.
-        """
         try:
-            response = self.get_response(request)
-            return response
+            return self.get_response(request)
         except Exception as ex:
             return self.process_exception(request, ex)
 
     def process_exception(self, request, exception):
         """
-        Processa diferentes tipos de exceções e retorna uma resposta JSON apropriada.
-
-        Se a exceção for uma instância de `APIException`, retorna os detalhes da exceção
-        no formato JSON com o código de status correspondente. Para outras exceções,
-        retorna uma mensagem genérica de erro com código HTTP 500.
-
-        Args:
-            request (HttpRequest): Objeto da requisição HTTP.
-            exception (Exception): Exceção capturada durante o processamento da requisição.
-
-        Returns:
-            JsonResponse: Resposta JSON contendo os detalhes do erro.
+        Transforma exceções conforme os mapeamentos registrados,
+        e retorna JSONResponse apropriado.
         """
+        for exc_type, transformer in self.exception_mappings.items():
+            if isinstance(exception, exc_type):
+                transformed = transformer(exception)
+
+                if isinstance(transformed, APIException):
+                    return JsonResponse(
+                        transformed.to_dict(),
+                        status=transformed.status_code,
+                    )
+
+                return transformed
+
         if isinstance(exception, APIException):
             return JsonResponse(exception.to_dict(), status=exception.status_code)
 
         return JsonResponse(
             {
-                "code": 500,
                 "message": "An unexpected error occurred.",
-                "errors": {"message": str(exception)},
+                "errors": {"message": str(exception)} if DEBUG else {},
             },
             status=500,
         )
+
+    @classmethod
+    def when(cls, exc_type):
+        return _ExceptionMapper(cls, exc_type)
+
+
+class _ExceptionMapper:
+    def __init__(self, middleware_cls, exc_type):
+        self.middleware_cls = middleware_cls
+        self.exc_type = exc_type
+
+    def then_raise(self, value):
+        """
+        Registra um mapeamento de exceção para outra exceção (normalmente APIException).
+
+        `value` pode ser:
+          - uma instância de APIException (será retornada diretamente)
+          - um callable que recebe a exceção original e retorna uma APIException
+        """
+        def transformer(exc):
+            if callable(value):
+                return value(exc)
+            return value
+
+        self.middleware_cls.exception_mappings[self.exc_type] = transformer
+        return self.middleware_cls
 
 
 __all__ = ["ExceptionHandlingMiddleware"]
