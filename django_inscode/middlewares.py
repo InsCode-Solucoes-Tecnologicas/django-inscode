@@ -1,6 +1,5 @@
 from django.http import JsonResponse
-from django.settings import DEBUG # type: ignore
-
+from django.conf import settings
 from typing import Callable
 
 from .exceptions import APIException
@@ -49,7 +48,7 @@ class ExceptionHandlingMiddleware:
         return JsonResponse(
             {
                 "message": "An unexpected error occurred.",
-                "errors": {"message": str(exception)} if DEBUG else {},
+                "errors": {"message": str(exception)} if bool(settings.DEBUG) else {},
             },
             status=500,
         )
