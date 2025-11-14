@@ -58,6 +58,14 @@ class AND:
         self.op1 = op1
         self.op2 = op2
 
+    @property
+    def message(self):
+        msg1 = getattr(self.op1, 'message', 'Permissão negada.')
+        msg2 = getattr(self.op2, 'message', 'Permissão negada.')
+        if msg1 == msg2:
+            return msg1
+        return f"{msg1} e {msg2}"
+
     def has_permission(self, request, view):
         return self.op1.has_permission(request, view) and self.op2.has_permission(
             request, view
@@ -73,6 +81,14 @@ class OR:
     def __init__(self, op1, op2):
         self.op1 = op1
         self.op2 = op2
+
+    @property
+    def message(self):
+        msg1 = getattr(self.op1, 'message', 'Permissão negada.')
+        msg2 = getattr(self.op2, 'message', 'Permissão negada.')
+        if msg1 == msg2:
+            return msg1
+        return f"{msg1} ou {msg2}"
 
     def has_permission(self, request, view):
         return self.op1.has_permission(request, view) or self.op2.has_permission(
@@ -92,6 +108,11 @@ class OR:
 class NOT:
     def __init__(self, op1):
         self.op1 = op1
+
+    @property
+    def message(self):
+        msg = getattr(self.op1, 'message', 'Permissão negada.')
+        return f"(Não) {msg}"
 
     def has_permission(self, request, view):
         return not self.op1.has_permission(request, view)
