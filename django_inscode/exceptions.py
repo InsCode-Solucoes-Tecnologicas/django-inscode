@@ -27,6 +27,7 @@ class APIException(Exception):
         self.message = message or self.default_message
         self.status_code = status_code or self.status_code
         self.errors = errors or []
+        super().__init__(self.message, self.errors)
 
     def to_dict(self):
         """
