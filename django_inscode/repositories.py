@@ -271,6 +271,8 @@ class Repository(IRepository):
 
             except ValidationError as e:
                 raise BadRequest(errors=self._format_validation_errors(e))
+            except BadRequest as e:
+                raise e
             except Exception as e:
                 raise InternalServerError(errors={"internal_server_error": str(e)})
 
