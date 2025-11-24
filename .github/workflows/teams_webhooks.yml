@@ -1,0 +1,29 @@
+name: Notify Teams
+
+on:
+  pull_request:
+    types: [closed]
+    branches: [main]
+
+jobs:
+    teams_webhooks:
+        if: github.event.pull_request.merged == true
+        runs-on: ubuntu-latest
+        steps:
+            - name: Enviar ao canal de atualizações da django-inscode
+              if: github.event.pull_request.base.ref == 'main'
+              uses: InsCode-Solucoes-Tecnologicas/common-actions/merge-card@main
+              with:
+                teams_webhook_url: ${{ secrets.TEAMS_WEBHOOK_MAIN_URL }}
+                title_img: https://avatars.githubusercontent.com/${{ github.repository_owner }}
+                title_text: ${{ github.event.pull_request.title }}
+                title_sub: ${{ github.repository }}
+                author_img: ${{ github.event.pull_request.user.avatar_url }}
+                author_name: ${{ github.event.pull_request.user.login }}
+                branch_name: ${{ github.event.pull_request.head.ref }}
+                branch_commits: ${{ github.event.pull_request.commits }}
+                timestamp: ${{ github.event.pull_request.merged_at }}
+                commit_hash: ${{ github.sha }}
+                pr_url: ${{ github.event.pull_request.html_url }}
+                repository_url: ${{ github.event.pull_request.base.repo.html_url }}
+                branch_url: ${{ github.event.pull_request.head.repo.html_url }}/tree/${{ github.event.pull_request.head.ref }}
