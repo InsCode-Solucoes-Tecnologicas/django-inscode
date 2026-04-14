@@ -6,12 +6,12 @@ from django.db.models import Model, QuerySet
 from django.http import HttpRequest, JsonResponse
 from django_filters import FilterSet
 
-from math import ceil
+from django_inscode.services import GenericModelService
 
 from . import exceptions, settings
 
 
-class ServiceCreateMixin:
+class ServiceCreateMixin[T: Model]:
     """
     Mixin para criar instâncias de um modelo em um serviço.
 
@@ -19,7 +19,7 @@ class ServiceCreateMixin:
         create: Cria uma nova instância do modelo.
     """
 
-    def create(self, data: dict, context: dict) -> Model:
+    def create(self: GenericModelService[T], data: dict, context: dict) -> T:
         """
         Cria uma nova instância do modelo.
 
@@ -34,7 +34,7 @@ class ServiceCreateMixin:
         return model_repository.create(**data)
 
 
-class ServiceReadMixin:
+class ServiceReadMixin[T: Model]:
     """
     Mixin para ler instâncias de um modelo em um serviço.
 
@@ -43,7 +43,7 @@ class ServiceReadMixin:
         list: Lista instâncias filtradas do modelo.
     """
 
-    def read(self, id: UUID | int, context: dict) -> Model:
+    def read(self: GenericModelService[T], id: UUID | int, context: dict) -> T:
         """
         Lê uma instância específica pelo ID.
 
@@ -57,7 +57,7 @@ class ServiceReadMixin:
         model_repository = self.get_model_repository()
         return model_repository.read(id)
 
-    def list(self, context: dict, **kwargs) -> QuerySet[Model]:
+    def list(self: GenericModelService[T], context: dict, **kwargs) -> QuerySet[T]:
         """
         Lista instâncias filtradas do modelo.
 
@@ -72,7 +72,7 @@ class ServiceReadMixin:
         return model_repository.filter(**kwargs)
 
 
-class ServiceUpdateMixin:
+class ServiceUpdateMixin[T: Model]:
     """
     Mixin para atualizar instâncias de um modelo em um serviço.
 
@@ -80,7 +80,9 @@ class ServiceUpdateMixin:
         update: Atualiza uma instância específica pelo ID.
     """
 
-    def update(self, id: UUID | int, data: dict, context: dict) -> Model:
+    def update(
+        self: GenericModelService[T], id: UUID | int, data: dict, context: dict
+    ) -> T:
         """
         Atualiza uma instância específica pelo ID.
 
@@ -96,7 +98,7 @@ class ServiceUpdateMixin:
         return model_repository.update(id, **data)
 
 
-class ServiceDeleteMixin:
+class ServiceDeleteMixin[T: Model]:
     """
     Mixin para excluir instâncias de um modelo em um serviço.
 
@@ -104,7 +106,7 @@ class ServiceDeleteMixin:
         delete: Exclui uma instância específica pelo ID.
     """
 
-    def delete(self, id: UUID | int, context: dict) -> None:
+    def delete(self: GenericModelService[T], id: UUID | int, context: dict) -> None:
         """
         Exclui uma instância específica pelo ID.
 
@@ -117,6 +119,10 @@ class ServiceDeleteMixin:
         """
         model_repository = self.get_model_repository()
         return model_repository.delete(id)
+
+
+# NOTE: couldn't find a way to tell that self should behave both like a GenericModelView
+# and a mixin at the same time (needed as they call their own methods here)
 
 
 class ViewCreateModelMixin:

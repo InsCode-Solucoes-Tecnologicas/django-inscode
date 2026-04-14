@@ -361,7 +361,7 @@ class GenericOrchestratorView(GenericView):
         return JsonResponse(result, status=200)
 
 
-class GenericModelView(GenericView):
+class GenericModelView[T: Model](GenericView):
     """
     Classe base genérica que combina mixins para criar views RESTful.
 
@@ -409,7 +409,7 @@ class GenericModelView(GenericView):
         """
         return self.kwargs.get(self.lookup_field)
 
-    def get_object(self):
+    def get_object(self) -> T:
         """
         Recupera uma instância específica do modelo com base no campo de lookup.
 
@@ -508,8 +508,8 @@ class DeleteModelView(GenericModelView, mixins.ViewDeleteModelMixin):
     """
 
 
-class ModelView(
-    GenericModelView,
+class ModelView[T: Model](
+    GenericModelView[T],
     mixins.ViewCreateModelMixin,
     mixins.ViewRetrieveModelMixin,
     mixins.ViewUpdateModelMixin,

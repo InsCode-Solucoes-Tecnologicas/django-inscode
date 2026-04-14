@@ -11,6 +11,27 @@ Data = dict[str, Any]
 Action = Literal["create", "read", "update", "delete", "list", "list_all"]
 
 
+@runtime_checkable
+class ServiceCreateProtocol(Protocol):
+    def create(self, data: dict, context: dict) -> Model: ...
+
+
+@runtime_checkable
+class ServiceReadProtocol(Protocol):
+    def read(self, id: UUID | int, context: dict) -> Model: ...
+    def list(self, context: dict, **kwargs) -> QuerySet[Model]: ...
+
+
+@runtime_checkable
+class ServiceUpdateProtocol(Protocol):
+    def update(self, id: UUID | int, data: dict, context: dict) -> Model: ...
+
+
+@runtime_checkable
+class ServiceDeleteProtocol(Protocol):
+    def delete(self, id: UUID | int, context: dict) -> None: ...
+
+
 class OrchestratorService(ABC):
     """
     Classe base para serviços orquestradores.
@@ -115,27 +136,25 @@ class GenericModelService[T: Model]:
         filter_kwargs = kwargs.get("filter_kwargs", {})
         context = kwargs.get("context", {})
 
-        if action == "create" and isinstance(self, mixins.ServiceCreateMixin):
-            validated_data: Optional[Data] = self.validate(data)
+        if action == "create" and isinstance(self, ServiceCreateProtocol):
+            validated_data: Data | None = self.validate(data)
             return self.create(
                 validated_data if validated_data is not None else data, context
             )
-        elif action == "read" and isinstance(self, mixins.ServiceReadMixin):
+        elif action == "read" and isinstance(self, ServiceReadProtocol):
             return self.read(*args, context=context)
-        elif action == "list_all" and isinstance(self, mixins.ServiceReadMixin):
-            return self.list_all(context=context)
-        elif action == "list" and isinstance(self, mixins.ServiceReadMixin):
+        elif action == "list" and isinstance(self, ServiceReadProtocol):
             return self.list(context=context, **filter_kwargs)
-        elif action == "update" and isinstance(self, mixins.ServiceUpdateMixin):
+        elif action == "update" and isinstance(self, ServiceUpdateProtocol):
             pk = args[0]
             instance = self.repository.read(pk)
-            validated_data: Optional[Data] = self.validate(data, instance=instance)
+            validated_data: Data | None = self.validate(data, instance=instance)
             return self.update(
                 *args,
                 data=validated_data if validated_data is not None else data,
                 context=context,
             )
-        elif action == "delete" and isinstance(self, mixins.ServiceDeleteMixin):
+        elif action == "delete" and isinstance(self, ServiceDeleteProtocol):
             return self.delete(*args, context=context)
         else:
             raise ValueError(f"Ação desconhecida ou inválida: {action}")
@@ -143,10 +162,10 @@ class GenericModelService[T: Model]:
 
 class ModelService[T: Model](
     GenericModelService[T],
-    mixins.ServiceCreateMixin,
-    mixins.ServiceReadMixin,
-    mixins.ServiceUpdateMixin,
-    mixins.ServiceDeleteMixin,
+    mixins.ServiceCreateMixin[T],
+    mixins.ServiceReadMixin[T],
+    mixins.ServiceUpdateMixin[T],
+    mixins.ServiceDeleteMixin[T],
 ):
     """
     Serviço que fornece ações CRUD (criar, ler, atualizar e excluir) para um modelo.
