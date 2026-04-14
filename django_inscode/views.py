@@ -1,19 +1,18 @@
-from django.views import View
-from django.core.exceptions import ImproperlyConfigured
+from typing import Any, ClassVar, cast
+
+from django.conf import settings
 from django.contrib.auth.models import AnonymousUser
+from django.core.exceptions import ImproperlyConfigured
+from django.db.models import Model
 from django.http import HttpRequest, JsonResponse
 from django.utils.module_loading import import_string
-from django.conf import settings
+from django.views import View
 
-from typing import Set, Dict, Any, List, Union, ClassVar, Optional, Type
-
-from . import mixins
-from . import exceptions
-
-from .permissions import BasePermission
-from .services import GenericModelService, OrchestratorService
-from .serializers import SerializerInterface, SerializerFactory
+from . import exceptions, mixins
 from .authentication import BaseAuthentication
+from .permissions import BasePermission
+from .serializers import SerializerFactory, SerializerInterface
+from .services import GenericModelService, OrchestratorService
 
 try:
     from marshmallow import Schema, ValidationError
@@ -23,10 +22,10 @@ except ImportError:
 
 import json
 
-Serializer = Union[Schema, SerializerInterface]
-Service = Union[GenericModelService, OrchestratorService]
-Context = Dict[str, Any]
-Data = Dict[str, Any]
+Serializer = Schema | SerializerInterface
+Service = GenericModelService | OrchestratorService
+Context = dict[str, Any]
+Data = dict[str, Any]
 
 
 class GenericView(View):
@@ -38,17 +37,19 @@ class GenericView(View):
 
     Attributes:
         service (Service): Serviço associado à view.
-        permissions_classes (List[Type[BasePermission]]): Lista de classes de permissão.
-        fields (List[str]): Lista de campos permitidos na view (validação simples).
-        input_schema (Optional[Type[Schema]]): Schema marshmallow para validação de entrada.
+        permissions_classes (list[type[BasePermission]]): Lista de classes de permissão.
+        fields (list[str]): Lista de campos permitidos na view (validação simples).
+        input_schema (type[Schema] | None): Schema marshmallow para validação de entrada.
             Se definido, tem prioridade sobre o campo 'fields'.
     """
 
-    service: ClassVar[Service] = None
-    permissions_classes: ClassVar[List[BasePermission]] = None
-    fields: ClassVar[List[str]] = []
-    authentication_classes: ClassVar[List[BaseAuthentication]] = []
-    input_schema: ClassVar[Optional[Type[Schema]]] = None
+    service: ClassVar[Service] = cast(Service, None)
+    permissions_classes: ClassVar[list[type[BasePermission]]] = cast(
+        list[type[BasePermission]], None
+    )
+    fields: ClassVar[set[str]] = set()
+    authentication_classes: ClassVar[list[type[BaseAuthentication]]] = []
+    input_schema: ClassVar[type[Schema] | None] = None
 
     def __init__(self, **kwargs) -> None:
         """
@@ -63,7 +64,8 @@ class GenericView(View):
         if not self.authentication_classes:
             self.authentication_classes = self.get_default_authentication_classes()
 
-    def get_default_authentication_classes(self) -> List[BaseAuthentication]:
+    @staticmethod
+    def get_default_authentication_classes() -> list[type[BaseAuthentication]]:
         """
         Retorna a lista de classes de autenticação padrão.
 
@@ -89,7 +91,7 @@ class GenericView(View):
             except exceptions.Unauthorized as e:
                 raise exceptions.Unauthorized(str(e))
 
-    def _parse_request_data(self, request: HttpRequest) -> Dict[str, Any]:
+    def _parse_request_data(self, request: HttpRequest) -> dict[str, Any]:
         """
         Analisa os dados da requisição com base no tipo de conteúdo.
 
@@ -97,7 +99,7 @@ class GenericView(View):
             request (HttpRequest): Objeto da requisição HTTP.
 
         Returns:
-            Dict[str, Any]: Dados analisados da requisição.
+            dict[str, Any]: Dados analisados da requisição.
 
         Raises:
             ValueError: Se o formato do conteúdo não for suportado ou se o JSON for inválido.
@@ -158,12 +160,12 @@ class GenericView(View):
             "query_params": request.GET.dict(),
         }
 
-    def get_permissions(self) -> List[BasePermission]:
+    def get_permissions(self) -> list[BasePermission]:
         """
         Instancia e retorna as classes de permissão configuradas.
 
         Returns:
-            List[BasePermission]: Lista de instâncias das classes de permissão.
+            list[BasePermission]: Lista de instâncias das classes de permissão.
         """
         if not self.permissions_classes:
             return []
@@ -191,16 +193,16 @@ class GenericView(View):
             if obj and not permission.has_object_permission(request, self, obj):
                 raise exceptions.Forbidden(message=permission.message)
 
-    def get_fields(self) -> Set[str]:
+    def get_fields(self) -> set[str]:
         """
         Retorna os campos obrigatórios para requisições de criação.
 
         Returns:
             Set[str]: Conjunto de nomes dos campos permitidos.
         """
-        return self.fields or []
+        return self.fields or set()
 
-    def verify_fields(self, data: Data, request: HttpRequest = None) -> None:
+    def verify_fields(self, data: Data, request: HttpRequest | None = None) -> None:
         """
         Verifica se todos os campos obrigatórios estão presentes nos dados.
 
@@ -218,7 +220,9 @@ class GenericView(View):
             if not (request and request.method == "PATCH"):
                 self._validate_simple_fields(data)
 
-    def _validate_with_schema(self, data: Data, request: HttpRequest = None) -> None:
+    def _validate_with_schema(
+        self, data: Data, request: HttpRequest | None = None
+    ) -> None:
         """
         Valida os dados usando o schema marshmallow definido.
 
@@ -238,8 +242,9 @@ class GenericView(View):
             )
 
         try:
-            is_partial = request and request.method == "PATCH"
+            is_partial = request is not None and request.method == "PATCH"
 
+            assert self.input_schema is not None
             schema = self.input_schema()
             validated_data = schema.load(data, partial=is_partial)
             data.clear()
@@ -319,11 +324,14 @@ class GenericOrchestratorView(GenericView):
 
     Attributes:
         service (OrchestratorService): Serviço orquestrador associado à view.
-        permissions_classes (List[Type[BasePermission]]): Lista de classes de permissão.
-        fields (List[str]): Lista de campos permitidos na view.
+        permissions_classes (list[type[BasePermission]]): Lista de classes de permissão.
+        fields (list[str]): Lista de campos permitidos na view.
     """
 
-    service: ClassVar[OrchestratorService] = None
+    service: ClassVar[OrchestratorService] = cast(OrchestratorService, None)
+
+    def get_service(self) -> OrchestratorService:
+        return cast(OrchestratorService, super().get_service())
 
     def execute(self, request: HttpRequest, *args, **kwargs) -> JsonResponse:
         """
@@ -364,12 +372,12 @@ class GenericModelView(GenericView):
     Attributes:
         serializer (SerializerInterface): Classe de serializador associada à view.
         service (GenericModelService): Serviço associado à view.
-        permissions_classes (List[Type[BasePermission]]): Lista de classes de permissão.
-        fields (List[str]): Lista de campos permitidos na view.
+        permissions_classes (list[type[BasePermission]]): Lista de classes de permissão.
+        fields (list[str]): Lista de campos permitidos na view.
     """
 
-    serializer: ClassVar[Serializer] = None
-    service: ClassVar[GenericModelService] = None
+    serializer: ClassVar[Serializer] = cast(Serializer, None)
+    service: ClassVar[GenericModelService] = cast(GenericModelService, None)
     lookup_field: ClassVar[str] = "pk"
 
     def _validate_required_attributes(self):
@@ -441,7 +449,7 @@ class GenericModelView(GenericView):
             obj (Model): Instância do modelo a ser serializada.
 
         Returns:
-            Dict[str, Any]: Dicionário contendo os dados serializados da instância.
+            dict[str, Any]: Dicionário contendo os dados serializados da instância.
 
         Raises:
             ValueError: Se ocorrer um erro durante a serialização.
@@ -457,8 +465,8 @@ class CreateModelView(GenericModelView, mixins.ViewCreateModelMixin):
     Attributes:
         serializer (t_serializer): Classe de serializador associada à view.
         service (t_service): Serviço associado à view.
-        permissions_classes (List[Type[t_permission]]): Lista de classes de permissão.
-        fields (List[str]): Lista de campos permitidos na view.
+        permissions_classes (list[type[t_permission]]): Lista de classes de permissão.
+        fields (list[str]): Lista de campos permitidos na view.
     """
 
 
@@ -471,7 +479,7 @@ class RetrieveModelView(GenericModelView, mixins.ViewRetrieveModelMixin):
         lookup_field (str): Nome do campo usado para identificar instâncias específicas. Default é "pk".
         paginate_by (int): Número de itens por página para paginação. Default é definido em `settings.DEFAULT_PAGINATED_BY`.
         service (t_service): Serviço associado à view.
-        permissions_classes (List[Type[t_permission]]): Lista de classes de permissão.
+        permissions_classes (list[type[t_permission]]): Lista de classes de permissão.
     """
 
 
@@ -483,8 +491,8 @@ class UpdateModelView(GenericModelView, mixins.ViewUpdateModelMixin):
         serializer (t_serializer): Classe de serializador associada à view.
         lookup_field (str): Nome do campo usado para identificar instâncias específicas. Default é "pk".
         service (t_service): Serviço associado à view.
-        permissions_classes (List[Type[t_permission]]): Lista de classes de permissão.
-        fields (List[str]): Lista de campos permitidos na view.
+        permissions_classes (list[type[t_permission]]): Lista de classes de permissão.
+        fields (list[str]): Lista de campos permitidos na view.
     """
 
 
@@ -496,7 +504,7 @@ class DeleteModelView(GenericModelView, mixins.ViewDeleteModelMixin):
         serializer (t_serializer): Classe de serializador associada à view.
         lookup_field (str): Nome do campo usado para identificar instâncias específicas. Default é "pk".
         service (t_service): Serviço associado à view.
-        permissions_classes (List[Type[t_permission]]): Lista de classes de permissão.
+        permissions_classes (list[type[t_permission]]): Lista de classes de permissão.
     """
 
 
@@ -521,8 +529,8 @@ class ModelView(
         lookup_field (str): Nome do campo usado para identificar instâncias específicas. Default é "pk".
         paginate_by (int): Número de itens por página para paginação. Default é definido em `settings.DEFAULT_PAGINATED_BY`.
         service (GenericModelService): Serviço associado à view.
-        permissions_classes (List[Type[BasePermission]]): Lista de classes de permissão.
-        fields (List[str]): Lista de campos permitidos na view.
+        permissions_classes (list[type[BasePermission]]): Lista de classes de permissão.
+        fields (list[str]): Lista de campos permitidos na view.
     """
 
     pass

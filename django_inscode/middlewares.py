@@ -1,6 +1,7 @@
-from django.http import JsonResponse
-from django.conf import settings
 from typing import Callable
+
+from django.conf import settings
+from django.http import JsonResponse
 
 from .exceptions import APIException
 
@@ -37,13 +38,15 @@ class ExceptionHandlingMiddleware:
                 if isinstance(transformed, APIException):
                     return JsonResponse(
                         transformed.to_dict(),
-                        status=transformed.status_code,
+                        status=transformed.default_status_code,
                     )
 
                 return transformed
 
         if isinstance(exception, APIException):
-            return JsonResponse(exception.to_dict(), status=exception.status_code)
+            return JsonResponse(
+                exception.to_dict(), status=exception.default_status_code
+            )
 
         return JsonResponse(
             {
@@ -71,6 +74,7 @@ class _ExceptionMapper:
           - uma instância de APIException (será retornada diretamente)
           - um callable que recebe a exceção original e retorna uma APIException
         """
+
         def transformer(exc):
             if callable(value):
                 return value(exc)

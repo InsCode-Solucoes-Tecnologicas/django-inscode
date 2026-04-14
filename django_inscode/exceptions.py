@@ -12,7 +12,8 @@ class APIException(Exception):
         errors (list): Lista de erros específicos associados à exceção.
     """
 
-    status_code: ClassVar[int] = 500
+    # NOTE: an alternative would be changing the instance status_code variable name
+    status_code: int = 500
     default_message: ClassVar[str] = "A server error occurred."
 
     def __init__(self, message=None, status_code=None, errors=None):

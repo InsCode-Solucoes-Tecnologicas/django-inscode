@@ -1,12 +1,13 @@
-from . import mixins
-from .repositories import Repository
-
-from typing import Dict, Optional, Any, Literal
 from abc import ABC, abstractmethod
+from typing import Any, Literal, Protocol, runtime_checkable
+from uuid import UUID
 
-from django.db.models import Model
+from django.db.models import Model, QuerySet
 
-Data = Dict[str, Any]
+from . import mixins
+from .repositories import IRepository
+
+Data = dict[str, Any]
 Action = Literal["create", "read", "update", "delete", "list", "list_all"]
 
 
@@ -36,7 +37,7 @@ class OrchestratorService(ABC):
         pass
 
 
-class GenericModelService:
+class GenericModelService[T: Model]:
     """
     Classe genérica para servir como base para serviços de modelos.
 
@@ -48,7 +49,7 @@ class GenericModelService:
         repository (Repository): O repositório associado ao modelo.
     """
 
-    def __init__(self, repository: Repository):
+    def __init__(self, repository: IRepository[T]):
         """
         Inicializa o serviço com o repositório associado.
 
@@ -57,7 +58,7 @@ class GenericModelService:
         """
         self.repository = repository
 
-    def get_model_repository(self):
+    def get_model_repository(self) -> IRepository[T]:
         """
         Retorna o repositório associado ao modelo.
 
@@ -66,7 +67,9 @@ class GenericModelService:
         """
         return self.repository
 
-    def validate(self, data: Data, instance: Optional[Model] = None) -> Optional[Data]:
+    def validate(
+        self, data: Data, instance: Model | None = None, **kwargs
+    ) -> Data | None:
         """
         Valida os dados fornecidos durante uma ação de criação ou atualização.
 
@@ -138,8 +141,8 @@ class GenericModelService:
             raise ValueError(f"Ação desconhecida ou inválida: {action}")
 
 
-class ModelService(
-    GenericModelService,
+class ModelService[T: Model](
+    GenericModelService[T],
     mixins.ServiceCreateMixin,
     mixins.ServiceReadMixin,
     mixins.ServiceUpdateMixin,

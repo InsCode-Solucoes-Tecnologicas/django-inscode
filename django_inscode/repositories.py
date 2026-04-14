@@ -1,26 +1,22 @@
 from abc import ABC, abstractmethod
-from django.db import transaction
-from django.db.models import Model, QuerySet, Manager, Q
-from django.utils.translation import gettext as _
-from django.core.exceptions import (
-    ValidationError,
-    ObjectDoesNotExist,
-    FieldDoesNotExist,
-)
-from django.db.models.fields.related import ManyToManyRel, ManyToManyField
-from django.apps import apps
-
-from django_softdelete.models import SoftDeleteModel
-
+from typing import Any, cast
 from uuid import UUID
-from typing import TypeVar, List, Dict, Any, Generic
+
+from django.apps import apps
+from django.core.exceptions import (
+    FieldDoesNotExist,
+    ObjectDoesNotExist,
+    ValidationError,
+)
+from django.db import transaction
+from django.db.models import Manager, Model, Q, QuerySet
+from django.db.models.fields.related import ManyToManyField, ManyToManyRel
+from django_softdelete.models import SoftDeleteModel
 
 from .exceptions import BadRequest, InternalServerError, NotFound
 
-T = TypeVar("T", bound=Model)
 
-
-class IRepository(ABC, Generic[T]):
+class IRepository[T: Model](ABC):
     """
     Interface abstrata que define o contrato para repositórios.
 
@@ -32,7 +28,7 @@ class IRepository(ABC, Generic[T]):
     """
 
     @abstractmethod
-    def __init__(self, model: T) -> None:
+    def __init__(self, model: type[T]) -> None:
         """
         Inicializa o repositório com o modelo Django associado.
 
@@ -132,7 +128,7 @@ class IRepository(ABC, Generic[T]):
 
     @property
     @abstractmethod
-    def manager(self) -> Manager[Model]:
+    def manager(self) -> Manager[T]:
         """
         Retorna o manager para consultas mais complexas.
 
@@ -142,7 +138,7 @@ class IRepository(ABC, Generic[T]):
         pass
 
 
-class Repository(IRepository):
+class Repository[T: Model](IRepository[T]):
     """
     Repositório genérico para manipulação de modelos Django.
 
@@ -153,16 +149,16 @@ class Repository(IRepository):
         model (Model): O modelo Django associado ao repositório.
     """
 
-    def __init__(self, model: T):
+    def __init__(self, model: type[T]):
         """
         Inicializa o repositório com o modelo Django associado.
 
         Args:
-            model (Model): O modelo Django que será manipulado pelo repositório.
+            model (type[Model]): O modelo Django que será manipulado pelo repositório.
         """
         self.model = model
 
-    def _format_validation_errors(self, error: ValidationError) -> List[Dict[str, Any]]:
+    def _format_validation_errors(self, error: ValidationError) -> list[dict[str, Any]]:
         """
         Formata os erros de validação do Django no formato esperado.
 
@@ -170,7 +166,7 @@ class Repository(IRepository):
             error (ValidationError): Exceção de validação capturada.
 
         Returns:
-            List[Dict[str, Any]]: Lista de dicionários contendo os campos e mensagens de erro.
+            list[dict[str, Any]]: Lista de dicionários contendo os campos e mensagens de erro.
         """
         errors = []
         if hasattr(error, "error_dict"):
@@ -193,14 +189,14 @@ class Repository(IRepository):
         return errors
 
     def _save(
-        self, instance: T, many_to_many_data: Dict[str, List[Any]] = None
+        self, instance: T, many_to_many_data: dict[str, list[Any]] | None = None
     ) -> None:
         """
         Salva a instância no banco de dados, incluindo campos ManyToMany.
 
         Args:
             instance (Model): Instância do modelo a ser salva.
-            many_to_many_data (Dict[str, List[Any]], optional): Dados para campos ManyToMany.
+            many_to_many_data (dict[str, list[Any]], optional): Dados para campos ManyToMany.
 
         Raises:
             BadRequest: Se houver problemas nos dados fornecidos.
@@ -221,7 +217,7 @@ class Repository(IRepository):
 
                         except FieldDoesNotExist:
                             raise BadRequest(
-                                message=f"Campo inexistente.",
+                                message="Campo inexistente.",
                                 errors={
                                     f"{field_name}": "Este campo não existe no modelo."
                                 },
@@ -229,7 +225,7 @@ class Repository(IRepository):
 
                         if not isinstance(value, (list, QuerySet)):
                             raise BadRequest(
-                                message=f"Valor inválido para o campo ManyToMany.",
+                                message="Valor inválido para o campo ManyToMany.",
                                 errors={
                                     f"{field_name}": "Esperada uma lista de IDs ou instâncias."
                                 },
@@ -251,7 +247,7 @@ class Repository(IRepository):
                                     missing_ids = set(ids) - ids_found
 
                                     raise BadRequest(
-                                        message=f"Alguns objetos relacionados não foram encontrados.",
+                                        message="Alguns objetos relacionados não foram encontrados.",
                                         errors={
                                             f"{field_name}": f"IDs inválidos: {missing_ids}."
                                         },
@@ -259,7 +255,7 @@ class Repository(IRepository):
 
                             except (ValueError, AttributeError):
                                 raise BadRequest(
-                                    message=f"IDs inválidos.",
+                                    message="IDs inválidos.",
                                     errors={
                                         f"{field_name}": "IDs malformados.",
                                     },
@@ -299,7 +295,7 @@ class Repository(IRepository):
                     many_to_many_data[field_name] = value
             except FieldDoesNotExist:
                 raise BadRequest(
-                    message=f"Campo inexistente.",
+                    message="Campo inexistente.",
                     errors={f"{field_name}": "Este campo não existe no modelo."},
                 )
 
@@ -336,7 +332,7 @@ class Repository(IRepository):
                 query |= Q(**filters)
 
         if query:
-            deleted_qs = self.model.deleted_objects.filter(query)
+            deleted_qs = cast(SoftDeleteModel, self.model).deleted_objects.filter(query)
             for obj in deleted_qs:
                 obj.hard_delete()
 
@@ -470,7 +466,7 @@ class Repository(IRepository):
         return self.model.objects.filter(**kwargs)
 
     @property
-    def manager(self) -> Manager[Model]:
+    def manager(self) -> Manager[T]:
         """
         Retorna o manager para consultas mais complexas. Equivalente a acessar Model.objects
 
@@ -487,7 +483,7 @@ def get_repository(model: str) -> Repository:
     if not isinstance(model, str):
         raise ValueError("model must be a string")
 
-    if not model in __REPOSITORIES.keys():
+    if model not in __REPOSITORIES.keys():
         raise ValueError(f"model not registered in django apps: {model}")
 
     return __REPOSITORIES[model]

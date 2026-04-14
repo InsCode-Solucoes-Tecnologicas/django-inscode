@@ -1,15 +1,14 @@
+from math import ceil
+from typing import Any, ClassVar, cast
 from uuid import UUID
-from typing import Dict, Any, Optional, ClassVar
 
+from django.db.models import Model, QuerySet
 from django.http import HttpRequest, JsonResponse
-from django.db.models import QuerySet, Model
-
 from django_filters import FilterSet
 
 from math import ceil
 
-from . import settings
-from . import exceptions
+from . import exceptions, settings
 
 
 class ServiceCreateMixin:
@@ -20,13 +19,13 @@ class ServiceCreateMixin:
         create: Cria uma nova instância do modelo.
     """
 
-    def create(self, data: Dict, context: Dict) -> Model:
+    def create(self, data: dict, context: dict) -> Model:
         """
         Cria uma nova instância do modelo.
 
         Args:
-            data (Dict): Dados para criação do objeto.
-            context (Dict): Contexto adicional para a operação.
+            data (dict): Dados para criação do objeto.
+            context (dict): Contexto adicional para a operação.
 
         Returns:
             t_model: Instância criada do modelo.
@@ -44,13 +43,13 @@ class ServiceReadMixin:
         list: Lista instâncias filtradas do modelo.
     """
 
-    def read(self, id: UUID | int, context: Dict) -> Model:
+    def read(self, id: UUID | int, context: dict) -> Model:
         """
         Lê uma instância específica pelo ID.
 
         Args:
             id (UUID | int): Identificador da instância.
-            context (Dict): Contexto adicional para a operação.
+            context (dict): Contexto adicional para a operação.
 
         Returns:
             t_model: Instância do modelo correspondente ao ID.
@@ -58,12 +57,12 @@ class ServiceReadMixin:
         model_repository = self.get_model_repository()
         return model_repository.read(id)
 
-    def list(self, context: Dict, **kwargs) -> QuerySet[Model]:
+    def list(self, context: dict, **kwargs) -> QuerySet[Model]:
         """
         Lista instâncias filtradas do modelo.
 
         Args:
-            context (Dict): Contexto adicional para a operação.
+            context (dict): Contexto adicional para a operação.
             **kwargs: Filtros adicionais para a consulta.
 
         Returns:
@@ -81,14 +80,14 @@ class ServiceUpdateMixin:
         update: Atualiza uma instância específica pelo ID.
     """
 
-    def update(self, id: UUID | int, data: Dict, context: Dict) -> Model:
+    def update(self, id: UUID | int, data: dict, context: dict) -> Model:
         """
         Atualiza uma instância específica pelo ID.
 
         Args:
             id (UUID | int): Identificador da instância.
-            data (Dict): Dados atualizados da instância.
-            context (Dict): Contexto adicional para a operação.
+            data (dict): Dados atualizados da instância.
+            context (dict): Contexto adicional para a operação.
 
         Returns:
             t_model: Instância atualizada do modelo.
@@ -105,13 +104,13 @@ class ServiceDeleteMixin:
         delete: Exclui uma instância específica pelo ID.
     """
 
-    def delete(self, id: UUID | int, context: Dict) -> None:
+    def delete(self, id: UUID | int, context: dict) -> None:
         """
         Exclui uma instância específica pelo ID.
 
         Args:
             id (UUID | int): Identificador da instância.
-            context (Dict): Contexto adicional para a operação.
+            context (dict): Contexto adicional para a operação.
 
         Returns:
             None
@@ -163,9 +162,9 @@ class ViewRetrieveModelMixin:
     """
 
     paginate_by: ClassVar[int] = settings.DEFAULT_PAGINATED_BY
-    filter_class: ClassVar[FilterSet] = None
+    filter_class: ClassVar[type[FilterSet]] = cast(type[FilterSet], None)
 
-    def get_filter_class(self) -> Optional[FilterSet]:
+    def get_filter_class(self) -> type[FilterSet] | None:
         """
         Retorna a classe de filtro caso esta esteja especificada.
         """
@@ -176,12 +175,12 @@ class ViewRetrieveModelMixin:
 
         return self.filter_class
 
-    def get_queryset(self, filter_kwargs: Optional[Dict[str, Any]] = None):
+    def get_queryset(self, filter_kwargs: dict[str, Any] | None = None):
         """
         Retorna o queryset filtrado com base nos argumentos fornecidos.
 
         Args:
-            filter_kwargs (Optional[Dict[str, Any]]): Dicionário contendo filtros opcionais.
+            filter_kwargs (dict[str, Any] | None): Dicionário contendo filtros opcionais.
 
         Returns:
             QuerySet: Queryset filtrado com base nos critérios fornecidos.
@@ -265,12 +264,12 @@ class ViewRetrieveModelMixin:
         serialized_data = [self.serialize_object(obj) for obj in paginated_queryset]
 
         total_items = queryset.count()
-        
+
         response_data = {
             "pagination": {
                 "current_page": page_number,
                 "total_items": total_items,
-                "total_pages": ceil(total_items/self.paginate_by),
+                "total_pages": ceil(total_items / self.paginate_by),
                 "has_next": len(paginated_queryset) == self.paginate_by,
                 "has_previous": page_number > 1,
             },
@@ -416,5 +415,4 @@ __all__ = [
     "ViewRetrieveModelMixin",
     "ViewUpdateModelMixin",
     "ViewDeleteModelMixin",
-    "ContentTypeHandlerMixin",
 ]

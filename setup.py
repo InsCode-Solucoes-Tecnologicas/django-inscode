@@ -14,9 +14,7 @@ Versão do Python não suportada
 Esta versão do Django Inscode requer o python Python {}.{}, mas você está tentando
 instalar na versão {}.{}.
 
-""".format(
-            *(REQUIRED_PYTHON + CURRENT_PYTHON)
-        )
+""".format(*(REQUIRED_PYTHON + CURRENT_PYTHON))
     )
     sys.exit(1)
 
