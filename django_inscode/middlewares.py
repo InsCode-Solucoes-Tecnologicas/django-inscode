@@ -38,15 +38,13 @@ class ExceptionHandlingMiddleware:
                 if isinstance(transformed, APIException):
                     return JsonResponse(
                         transformed.to_dict(),
-                        status=transformed.default_status_code,
+                        status=transformed.status_code,
                     )
 
                 return transformed
 
         if isinstance(exception, APIException):
-            return JsonResponse(
-                exception.to_dict(), status=exception.default_status_code
-            )
+            return JsonResponse(exception.to_dict(), status=exception.status_code)
 
         return JsonResponse(
             {
