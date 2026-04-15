@@ -1,5 +1,6 @@
-from setuptools import setup, find_packages
 import sys
+
+from setuptools import find_packages, setup
 
 CURRENT_PYTHON = sys.version_info[:2]
 REQUIRED_PYTHON = (3, 12)
@@ -26,7 +27,7 @@ def read(f):
 
 setup(
     name="django-inscode",
-    version="1.7.8",
+    version="2.0.0",
     description="Django framework da Inscode.",
     long_description=read("README.md"),
     long_description_content_type="text/markdown",
