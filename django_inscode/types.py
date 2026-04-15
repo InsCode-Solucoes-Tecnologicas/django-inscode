@@ -1,4 +1,5 @@
-from typing import Any, TypedDict
+from typing import Any, TypedDict, TypeVar
+from uuid import UUID
 
 type Data = dict[str, Any]
 
@@ -8,3 +9,6 @@ class Context(TypedDict):
     session: Any
     url_params: dict
     query_params: dict
+
+
+Id = TypeVar("Id", UUID, int)

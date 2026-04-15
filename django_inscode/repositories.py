@@ -13,6 +13,8 @@ from django.db.models import Manager, Model, Q, QuerySet
 from django.db.models.fields.related import ManyToManyField, ManyToManyRel
 from django_softdelete.models import SoftDeleteModel
 
+from django_inscode.types import Id
+
 from .exceptions import BadRequest, InternalServerError, NotFound
 
 
@@ -55,12 +57,12 @@ class IRepository[T: Model](ABC):
         pass
 
     @abstractmethod
-    def read(self, id: UUID | int) -> T:
+    def read(self, id: Id) -> T:
         """
         Busca uma instância existente no banco de dados via ID.
 
         Args:
-            id (UUID | int): Identificador da instância.
+            id ((UUID, int)): Identificador da instância.
 
         Returns:
             Model: Instância encontrada do modelo.
@@ -71,12 +73,12 @@ class IRepository[T: Model](ABC):
         pass
 
     @abstractmethod
-    def update(self, id: UUID | int, **data) -> T:
+    def update(self, id: Id, **data) -> T:
         """
         Atualiza uma instância existente no banco de dados.
 
         Args:
-            id (UUID | int): Identificador da instância a ser atualizada.
+            id ((UUID, int)): Identificador da instância a ser atualizada.
             **data: Dados para atualização da instância.
 
         Returns:
@@ -90,12 +92,12 @@ class IRepository[T: Model](ABC):
         pass
 
     @abstractmethod
-    def delete(self, id: UUID | int) -> None:
+    def delete(self, id: Id) -> None:
         """
         Exclui uma instância existente no banco de dados via ID.
 
         Args:
-            id (UUID | int): Identificador da instância a ser excluída.
+            id ((UUID, int)): Identificador da instância a ser excluída.
 
         Raises:
             NotFound: Se a instância não for encontrada.
@@ -336,12 +338,12 @@ class Repository[T: Model](IRepository[T]):
             for obj in deleted_qs:
                 obj.hard_delete()
 
-    def read(self, id: UUID | int) -> T:
+    def read(self, id: Id) -> T:
         """
         Busca uma instância existente no banco de dados via ID.
 
         Args:
-            id (UUID | int): Identificador da instância.
+            id ((UUID, int)): Identificador da instância.
 
         Returns:
             Model: Instância encontrada do modelo.
@@ -355,7 +357,7 @@ class Repository[T: Model](IRepository[T]):
         except self.model.DoesNotExist:
             raise NotFound(message=f"{self.model._meta.object_name} não encontrado")
 
-    def update(self, id: UUID | int, **data) -> T:
+    def update(self, id: Id, **data) -> T:
         """
         Atualiza uma instância existente e seus relacionamentos many-to-many (diretos e inversos).
 
@@ -425,12 +427,12 @@ class Repository[T: Model](IRepository[T]):
 
         return instance
 
-    def delete(self, id: UUID | int) -> None:
+    def delete(self, id: Id) -> None:
         """
         Exclui uma instância existente no banco de dados via ID.
 
         Args:
-            id (UUID | int): Identificador da instância a ser excluída.
+            id ((UUID, int)): Identificador da instância a ser excluída.
 
         Raises:
             NotFound: Se a instância não for encontrada.

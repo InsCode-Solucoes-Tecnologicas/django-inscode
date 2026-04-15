@@ -1,12 +1,11 @@
 from abc import ABC, abstractmethod
 from typing import Literal, Protocol, runtime_checkable
-from uuid import UUID
 
 from django.db.models import Model, QuerySet
 
 from . import mixins
 from .repositories import IRepository
-from .types import Context, Data
+from .types import Context, Data, Id
 
 Action = Literal["create", "read", "update", "delete", "list", "list_all"]
 
@@ -18,18 +17,18 @@ class ServiceCreateProtocol(Protocol):
 
 @runtime_checkable
 class ServiceReadProtocol(Protocol):
-    def read(self, id: UUID | int, context: Context) -> Model: ...
+    def read(self, id: Id, context: Context) -> Model: ...
     def list(self, context: Context, **kwargs) -> QuerySet[Model]: ...
 
 
 @runtime_checkable
 class ServiceUpdateProtocol(Protocol):
-    def update(self, id: UUID | int, data: dict, context: Context) -> Model: ...
+    def update(self, id: Id, data: dict, context: Context) -> Model: ...
 
 
 @runtime_checkable
 class ServiceDeleteProtocol(Protocol):
-    def delete(self, id: UUID | int, context: Context) -> None: ...
+    def delete(self, id: Id, context: Context) -> None: ...
 
 
 class OrchestratorService(ABC):

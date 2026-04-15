@@ -1,6 +1,5 @@
 from math import ceil
 from typing import TYPE_CHECKING, Any, ClassVar, cast
-from uuid import UUID
 
 from django.db.models import Model, QuerySet
 from django.http import HttpRequest, JsonResponse
@@ -10,7 +9,7 @@ if TYPE_CHECKING:
     from django_inscode.services import GenericModelService
 
 from . import exceptions, settings
-from .types import Context, Data
+from .types import Context, Data, Id
 
 
 class ServiceCreateMixin[T: Model]:
@@ -45,12 +44,12 @@ class ServiceReadMixin[T: Model]:
         list: Lista instâncias filtradas do modelo.
     """
 
-    def read(self: "GenericModelService[T]", id: UUID | int, context: Context) -> T:
+    def read(self: "GenericModelService[T]", id: Id, context: Context) -> T:
         """
         Lê uma instância específica pelo ID.
 
         Args:
-            id (UUID | int): Identificador da instância.
+            id ((UUID, int)): Identificador da instância.
             context (dict): Contexto adicional para a operação.
 
         Returns:
@@ -83,13 +82,13 @@ class ServiceUpdateMixin[T: Model]:
     """
 
     def update(
-        self: "GenericModelService[T]", id: UUID | int, data: Data, context: Context
+        self: "GenericModelService[T]", id: Id, data: Data, context: Context
     ) -> T:
         """
         Atualiza uma instância específica pelo ID.
 
         Args:
-            id (UUID | int): Identificador da instância.
+            id ((UUID, int)): Identificador da instância.
             data (dict): Dados atualizados da instância.
             context (dict): Contexto adicional para a operação.
 
@@ -108,14 +107,12 @@ class ServiceDeleteMixin[T: Model]:
         delete: Exclui uma instância específica pelo ID.
     """
 
-    def delete(
-        self: "GenericModelService[T]", id: UUID | int, context: Context
-    ) -> None:
+    def delete(self: "GenericModelService[T]", id: Id, context: Context) -> None:
         """
         Exclui uma instância específica pelo ID.
 
         Args:
-            id (UUID | int): Identificador da instância.
+            id ((UUID, int)): Identificador da instância.
             context (dict): Contexto adicional para a operação.
 
         Returns:
