@@ -8,11 +8,14 @@ from django.http import HttpRequest, JsonResponse
 from django.utils.module_loading import import_string
 from django.views import View
 
+from django_inscode.utils import marshmallow as schema_utils
+
 from . import exceptions, mixins
 from .authentication import BaseAuthentication
 from .permissions import BasePermission
 from .serializers import SerializerFactory, SerializerInterface
 from .services import GenericModelService, OrchestratorService
+from .types import Context, Data
 
 try:
     from marshmallow import Schema, ValidationError
@@ -24,8 +27,6 @@ import json
 
 Serializer = Schema | SerializerInterface
 Service = GenericModelService | OrchestratorService
-Context = dict[str, Any]
-Data = dict[str, Any]
 
 
 class GenericView(View):
@@ -242,11 +243,23 @@ class GenericView(View):
             )
 
         try:
-            is_partial = request is not None and request.method == "PATCH"
+            is_patch = request is not None and request.method == "PATCH"
 
             assert self.input_schema is not None
             schema = self.input_schema()
-            validated_data = schema.load(data, partial=is_partial)
+            validated_data = (
+                schema.load(
+                    {
+                        k: v
+                        for k, v in data.items()
+                        if k in schema_utils.get_updatable_fields(schema)
+                    },
+                    partial=True,
+                )
+                if is_patch
+                else schema.load(data)
+            )
+
             data.clear()
             data.update(validated_data)
         except ValidationError as e:

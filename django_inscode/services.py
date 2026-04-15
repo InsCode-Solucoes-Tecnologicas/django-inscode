@@ -1,35 +1,35 @@
 from abc import ABC, abstractmethod
-from typing import Any, Literal, Protocol, runtime_checkable
+from typing import Literal, Protocol, runtime_checkable
 from uuid import UUID
 
 from django.db.models import Model, QuerySet
 
 from . import mixins
 from .repositories import IRepository
+from .types import Context, Data
 
-Data = dict[str, Any]
 Action = Literal["create", "read", "update", "delete", "list", "list_all"]
 
 
 @runtime_checkable
 class ServiceCreateProtocol(Protocol):
-    def create(self, data: dict, context: dict) -> Model: ...
+    def create(self, data: dict, context: Context) -> Model: ...
 
 
 @runtime_checkable
 class ServiceReadProtocol(Protocol):
-    def read(self, id: UUID | int, context: dict) -> Model: ...
-    def list(self, context: dict, **kwargs) -> QuerySet[Model]: ...
+    def read(self, id: UUID | int, context: Context) -> Model: ...
+    def list(self, context: Context, **kwargs) -> QuerySet[Model]: ...
 
 
 @runtime_checkable
 class ServiceUpdateProtocol(Protocol):
-    def update(self, id: UUID | int, data: dict, context: dict) -> Model: ...
+    def update(self, id: UUID | int, data: dict, context: Context) -> Model: ...
 
 
 @runtime_checkable
 class ServiceDeleteProtocol(Protocol):
-    def delete(self, id: UUID | int, context: dict) -> None: ...
+    def delete(self, id: UUID | int, context: Context) -> None: ...
 
 
 class OrchestratorService(ABC):
@@ -89,7 +89,7 @@ class GenericModelService[T: Model]:
         return self.repository
 
     def validate(
-        self, data: Data, instance: Model | None = None, **kwargs
+        self, data: Data, context: Context, instance: T | None = None
     ) -> Data | None:
         """
         Valida os dados fornecidos durante uma ação de criação ou atualização.
@@ -134,10 +134,10 @@ class GenericModelService[T: Model]:
         """
         data = kwargs.get("data", {})
         filter_kwargs = kwargs.get("filter_kwargs", {})
-        context = kwargs.get("context", {})
+        context: Context = kwargs.get("context", {})
 
         if action == "create" and isinstance(self, ServiceCreateProtocol):
-            validated_data: Data | None = self.validate(data)
+            validated_data: Data | None = self.validate(data, context)
             return self.create(
                 validated_data if validated_data is not None else data, context
             )
@@ -148,7 +148,9 @@ class GenericModelService[T: Model]:
         elif action == "update" and isinstance(self, ServiceUpdateProtocol):
             pk = args[0]
             instance = self.repository.read(pk)
-            validated_data: Data | None = self.validate(data, instance=instance)
+            validated_data: Data | None = self.validate(
+                data, context, instance=instance
+            )
             return self.update(
                 *args,
                 data=validated_data if validated_data is not None else data,

@@ -10,6 +10,7 @@ if TYPE_CHECKING:
     from django_inscode.services import GenericModelService
 
 from . import exceptions, settings
+from .types import Context, Data
 
 
 class ServiceCreateMixin[T: Model]:
@@ -20,7 +21,7 @@ class ServiceCreateMixin[T: Model]:
         create: Cria uma nova instância do modelo.
     """
 
-    def create(self: "GenericModelService[T]", data: dict, context: dict) -> T:
+    def create(self: "GenericModelService[T]", data: Data, context: Context) -> T:
         """
         Cria uma nova instância do modelo.
 
@@ -44,7 +45,7 @@ class ServiceReadMixin[T: Model]:
         list: Lista instâncias filtradas do modelo.
     """
 
-    def read(self: "GenericModelService[T]", id: UUID | int, context: dict) -> T:
+    def read(self: "GenericModelService[T]", id: UUID | int, context: Context) -> T:
         """
         Lê uma instância específica pelo ID.
 
@@ -58,7 +59,7 @@ class ServiceReadMixin[T: Model]:
         model_repository = self.get_model_repository()
         return model_repository.read(id)
 
-    def list(self: "GenericModelService[T]", context: dict, **kwargs) -> QuerySet[T]:
+    def list(self: "GenericModelService[T]", context: Context, **kwargs) -> QuerySet[T]:
         """
         Lista instâncias filtradas do modelo.
 
@@ -82,7 +83,7 @@ class ServiceUpdateMixin[T: Model]:
     """
 
     def update(
-        self: "GenericModelService[T]", id: UUID | int, data: dict, context: dict
+        self: "GenericModelService[T]", id: UUID | int, data: Data, context: Context
     ) -> T:
         """
         Atualiza uma instância específica pelo ID.
@@ -107,7 +108,9 @@ class ServiceDeleteMixin[T: Model]:
         delete: Exclui uma instância específica pelo ID.
     """
 
-    def delete(self: "GenericModelService[T]", id: UUID | int, context: dict) -> None:
+    def delete(
+        self: "GenericModelService[T]", id: UUID | int, context: Context
+    ) -> None:
         """
         Exclui uma instância específica pelo ID.
 
@@ -120,10 +123,6 @@ class ServiceDeleteMixin[T: Model]:
         """
         model_repository = self.get_model_repository()
         return model_repository.delete(id)
-
-
-# NOTE: couldn't find a way to tell that self should behave both like a GenericModelView
-# and a mixin at the same time (needed as they call their own methods here)
 
 
 class ViewCreateModelMixin:
