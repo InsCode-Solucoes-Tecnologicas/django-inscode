@@ -12,7 +12,6 @@ class APIException(Exception):
         errors (list): Lista de erros específicos associados à exceção.
     """
 
-    # NOTE: an alternative would be changing the instance status_code variable name
     status_code: int = 500
     default_message: ClassVar[str] = "A server error occurred."
 
