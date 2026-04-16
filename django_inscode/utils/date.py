@@ -1,9 +1,7 @@
-from django.conf import settings as django_settings
-
 from datetime import datetime
 
-from django_inscode import settings
 import pytz
+from django.conf import settings as django_settings
 
 
 def get_actual_datetime() -> datetime:

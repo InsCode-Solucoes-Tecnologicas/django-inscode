@@ -1,13 +1,34 @@
-from . import mixins
-from .repositories import Repository
-
-from typing import Dict, Optional, Any, Literal
 from abc import ABC, abstractmethod
+from typing import Literal, Protocol, runtime_checkable
 
-from django.db.models import Model
+from django.db.models import Model, QuerySet
 
-Data = Dict[str, Any]
+from . import mixins
+from .repositories import IRepository
+from .types import Context, Data, Id
+
 Action = Literal["create", "read", "update", "delete", "list", "list_all"]
+
+
+@runtime_checkable
+class ServiceCreateProtocol(Protocol):
+    def create(self, data: dict, context: Context) -> Model: ...
+
+
+@runtime_checkable
+class ServiceReadProtocol(Protocol):
+    def read(self, id: Id, context: Context) -> Model: ...
+    def list(self, context: Context, **kwargs) -> QuerySet[Model]: ...
+
+
+@runtime_checkable
+class ServiceUpdateProtocol(Protocol):
+    def update(self, id: Id, data: dict, context: Context) -> Model: ...
+
+
+@runtime_checkable
+class ServiceDeleteProtocol(Protocol):
+    def delete(self, id: Id, context: Context) -> None: ...
 
 
 class OrchestratorService(ABC):
@@ -36,7 +57,7 @@ class OrchestratorService(ABC):
         pass
 
 
-class GenericModelService:
+class GenericModelService[T: Model]:
     """
     Classe genérica para servir como base para serviços de modelos.
 
@@ -48,7 +69,7 @@ class GenericModelService:
         repository (Repository): O repositório associado ao modelo.
     """
 
-    def __init__(self, repository: Repository):
+    def __init__(self, repository: IRepository[T]):
         """
         Inicializa o serviço com o repositório associado.
 
@@ -57,7 +78,7 @@ class GenericModelService:
         """
         self.repository = repository
 
-    def get_model_repository(self):
+    def get_model_repository(self) -> IRepository[T]:
         """
         Retorna o repositório associado ao modelo.
 
@@ -66,7 +87,9 @@ class GenericModelService:
         """
         return self.repository
 
-    def validate(self, data: Data, instance: Optional[Model] = None) -> Optional[Data]:
+    def validate(
+        self, data: Data, context: Context, instance: T | None = None
+    ) -> Data | None:
         """
         Valida os dados fornecidos durante uma ação de criação ou atualização.
 
@@ -110,40 +133,40 @@ class GenericModelService:
         """
         data = kwargs.get("data", {})
         filter_kwargs = kwargs.get("filter_kwargs", {})
-        context = kwargs.get("context", {})
+        context: Context = kwargs.get("context", {})
 
-        if action == "create" and isinstance(self, mixins.ServiceCreateMixin):
-            validated_data: Optional[Data] = self.validate(data)
+        if action == "create" and isinstance(self, ServiceCreateProtocol):
+            validated_data: Data | None = self.validate(data, context)
             return self.create(
                 validated_data if validated_data is not None else data, context
             )
-        elif action == "read" and isinstance(self, mixins.ServiceReadMixin):
+        elif action == "read" and isinstance(self, ServiceReadProtocol):
             return self.read(*args, context=context)
-        elif action == "list_all" and isinstance(self, mixins.ServiceReadMixin):
-            return self.list_all(context=context)
-        elif action == "list" and isinstance(self, mixins.ServiceReadMixin):
+        elif action == "list" and isinstance(self, ServiceReadProtocol):
             return self.list(context=context, **filter_kwargs)
-        elif action == "update" and isinstance(self, mixins.ServiceUpdateMixin):
+        elif action == "update" and isinstance(self, ServiceUpdateProtocol):
             pk = args[0]
             instance = self.repository.read(pk)
-            validated_data: Optional[Data] = self.validate(data, instance=instance)
+            validated_data: Data | None = self.validate(
+                data, context, instance=instance
+            )
             return self.update(
                 *args,
                 data=validated_data if validated_data is not None else data,
                 context=context,
             )
-        elif action == "delete" and isinstance(self, mixins.ServiceDeleteMixin):
+        elif action == "delete" and isinstance(self, ServiceDeleteProtocol):
             return self.delete(*args, context=context)
         else:
             raise ValueError(f"Ação desconhecida ou inválida: {action}")
 
 
-class ModelService(
-    GenericModelService,
-    mixins.ServiceCreateMixin,
-    mixins.ServiceReadMixin,
-    mixins.ServiceUpdateMixin,
-    mixins.ServiceDeleteMixin,
+class ModelService[T: Model](
+    GenericModelService[T],
+    mixins.ServiceCreateMixin[T],
+    mixins.ServiceReadMixin[T],
+    mixins.ServiceUpdateMixin[T],
+    mixins.ServiceDeleteMixin[T],
 ):
     """
     Serviço que fornece ações CRUD (criar, ler, atualizar e excluir) para um modelo.

@@ -1,32 +1,27 @@
+import datetime
 from dataclasses import fields, is_dataclass
+from decimal import Decimal
 from typing import (
     Any,
-    Dict,
-    List,
-    Optional,
+    Protocol,
     Union,
     get_args,
     get_origin,
-    Protocol,
-    Type,
 )
-from decimal import Decimal
 from uuid import UUID
 
 from django.db import models
-from django.core.files.base import File
-
+from django.db.models import Model
+from django.db.models.fields.files import FieldFile
 from marshmallow import Schema
 
 from .transports import Transport
 
-import datetime
-
-SerializedData = Dict[str, Any]
+SerializedData = dict[str, Any]
 
 
 class SerializerInterface(Protocol):
-    def serialize(self, obj: Any) -> SerializedData: ...
+    def serialize(self, instance: Any) -> SerializedData: ...
 
 
 class MarshmallowSerializerAdapter(SerializerInterface):
@@ -34,11 +29,11 @@ class MarshmallowSerializerAdapter(SerializerInterface):
     Adaptador do serializador do marshmallow para a interface de SerializerInterface.
     """
 
-    def __init__(self, schema_class: Type[Schema]):
+    def __init__(self, schema_class: type[Schema]):
         self.schema_class = schema_class
 
-    def serialize(self, obj: Schema):
-        return self.schema_class().dump(obj)
+    def serialize(self, instance: Any):
+        return self.schema_class().dump(instance)
 
 
 class Serializer(SerializerInterface):
@@ -49,17 +44,17 @@ class Serializer(SerializerInterface):
     serializados a partir de uma instância do modelo associado.
 
     Attributes:
-        model (Model): O modelo Django associado ao serializador.
-        transport (Type[Transport]): Classe de transporte que define os campos e tipos para serialização.
+        model (type[Model]): O modelo Django associado ao serializador.
+        transport (type[Transport]): Classe de transporte que define os campos e tipos para serialização.
     """
 
-    def __init__(self, model: models.Model, transport: Type[Transport]):
+    def __init__(self, model: type[models.Model], transport: type[Transport]):
         """
         Inicializa o serializador com o modelo e o transporte especificados.
 
         Args:
-            model (Model): O modelo Django que será serializado.
-            transport (Type[Transport]): Classe de transporte que define os campos e tipos para serialização.
+            model (type[Model]): O modelo Django que será serializado.
+            transport (type[Transport]): Classe de transporte que define os campos e tipos para serialização.
 
         Raises:
             ValueError: Se `transport` não for uma subclasse de `Transport`.
@@ -70,7 +65,7 @@ class Serializer(SerializerInterface):
         self.model = model
         self.transport = transport
 
-    def serialize(self, instance) -> Dict[str, Any]:
+    def serialize(self, instance: Model) -> SerializedData:
         """
         Serializa uma instância do modelo em um dicionário com base no transporte.
 
@@ -78,7 +73,7 @@ class Serializer(SerializerInterface):
             instance (Model): Instância do modelo a ser serializada.
 
         Returns:
-            Dict[str, Any]: Dicionário contendo os dados serializados da instância.
+            dict[str, Any]: Dicionário contendo os dados serializados da instância.
 
         Raises:
             ValueError: Se o transporte não for uma subclasse de `Transport` ou se a instância não for do tipo esperado.
@@ -121,7 +116,7 @@ class Serializer(SerializerInterface):
             UUID: self._serialize_uuid,
             datetime.date: self._serialize_date,
             datetime.datetime: self._serialize_date,
-            File: self._serialize_file,
+            FieldFile: self._serialize_file,
         }
 
         for base_type, serializer_func in type_serializers.items():
@@ -131,10 +126,10 @@ class Serializer(SerializerInterface):
         origin = get_origin(field_type)
         args = get_args(field_type)
 
-        if origin in [list, List]:
+        if origin is list:
             return self._serialize_list(value, args[0])
 
-        if origin in [dict, Dict]:
+        if origin is dict:
             return self._serialize_dict(value, args)
 
         if origin is Union and type(None) in args:
@@ -162,15 +157,15 @@ class Serializer(SerializerInterface):
         """Serializa datas e datetimes como strings ISO 8601."""
         return value.isoformat()
 
-    def _serialize_file(self, value: File) -> Optional[str]:
+    def _serialize_file(self, value: FieldFile) -> str | None:
         """Serializa arquivos como URLs."""
         return value.url if value else None
 
-    def _serialize_list(self, value: List[Any], item_type: Any) -> List[Any]:
+    def _serialize_list(self, value: list[Any], item_type: Any) -> list[Any]:
         """Serializa listas recursivamente."""
         return [self._serialize(item, item_type) for item in value]
 
-    def _serialize_dict(self, value: Dict[Any, Any], types: tuple) -> Dict[Any, Any]:
+    def _serialize_dict(self, value: dict[Any, Any], types: tuple) -> dict[Any, Any]:
         """Serializa dicionários recursivamente."""
         key_type, value_type = types
         return {
@@ -180,7 +175,7 @@ class Serializer(SerializerInterface):
 
     def _serialize_transport(
         self, value: models.Model, transport_type: Any
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Serializa objetos relacionados usando transportes aninhados."""
         model_class = type(value)
         return Serializer(model=model_class, transport=transport_type).serialize(value)

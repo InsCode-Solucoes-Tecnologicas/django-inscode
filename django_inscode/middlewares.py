@@ -1,6 +1,7 @@
-from django.http import JsonResponse
-from django.conf import settings
 from typing import Callable
+
+from django.conf import settings
+from django.http import JsonResponse
 
 from .exceptions import APIException
 
@@ -71,6 +72,7 @@ class _ExceptionMapper:
           - uma instância de APIException (será retornada diretamente)
           - um callable que recebe a exceção original e retorna uma APIException
         """
+
         def transformer(exc):
             if callable(value):
                 return value(exc)

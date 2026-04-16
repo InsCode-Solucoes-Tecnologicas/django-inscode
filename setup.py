@@ -1,5 +1,6 @@
-from setuptools import setup, find_packages
 import sys
+
+from setuptools import find_packages, setup
 
 CURRENT_PYTHON = sys.version_info[:2]
 REQUIRED_PYTHON = (3, 12)
@@ -14,9 +15,7 @@ Versão do Python não suportada
 Esta versão do Django Inscode requer o python Python {}.{}, mas você está tentando
 instalar na versão {}.{}.
 
-""".format(
-            *(REQUIRED_PYTHON + CURRENT_PYTHON)
-        )
+""".format(*(REQUIRED_PYTHON + CURRENT_PYTHON))
     )
     sys.exit(1)
 
@@ -28,7 +27,7 @@ def read(f):
 
 setup(
     name="django-inscode",
-    version="1.7.8",
+    version="2.0.0",
     description="Django framework da Inscode.",
     long_description=read("README.md"),
     long_description_content_type="text/markdown",

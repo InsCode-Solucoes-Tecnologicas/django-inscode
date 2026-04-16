@@ -3,7 +3,6 @@ from abc import ABC, abstractmethod
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
 from django.utils.module_loading import import_string
-
 from mozilla_django_oidc.auth import OIDCAuthenticationBackend
 
 from .exceptions import Unauthorized
@@ -79,7 +78,7 @@ class KeycloakBearerAuthentication(BaseAuthentication):
             return user
 
         except Exception as e:
-            raise Unauthorized("Token inválido ou expirado.")
+            raise Unauthorized("Token inválido ou expirado.") from e
 
     def get_or_create_user(self, backend, claims):
         """
