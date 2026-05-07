@@ -40,6 +40,7 @@ setup(
         "marshmallow>=3.26.0",
         "django-filter>=24.3",
         "mozilla-django-oidc>=4.0.1",
+        "apispec[marshmallow]>=6.6.0",
     ],
     python_requires=">=3.12",
     classifiers=[
