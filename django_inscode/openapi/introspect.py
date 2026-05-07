@@ -14,6 +14,7 @@ from django_inscode.openapi.filters import (
     filterset_to_parameters,
     pagination_parameters,
 )
+from django_inscode.openapi.schemas import paginated_response_schema
 from django_inscode.openapi.security import security_for_view
 from django_inscode.openapi.types import (
     CollectedRoute,
@@ -144,19 +145,7 @@ def _model_view_operations(
             list_params.extend(
                 filterset_to_parameters(view_class.filter_class)
             )
-            paginated_schema: dict[str, object] = {
-                "type": "object",
-                "properties": {
-                    "pagination": {"$ref": "#/components/schemas/Pagination"},
-                    "results": {
-                        "type": "array",
-                        "items": {
-                            "$ref": f"#/components/schemas/{output_schema.__name__}"
-                        },
-                    },
-                },
-                "required": ["pagination", "results"],
-            }
+            paginated_schema = paginated_response_schema(output_schema.__name__)
             operations.append(
                 OperationSpec(
                     path=route.path,
