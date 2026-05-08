@@ -45,9 +45,11 @@ def _path_has_lookup(route: CollectedRoute, lookup_field: str) -> bool:
     return any(p.name == lookup_field for p in route.path_parameters)
 
 
-def _tag_from_path(path: str) -> str:
+def _tag_from_path(path: str, strip_prefixes: tuple[str, ...] = ()) -> str:
     parts = [p for p in path.split("/") if p and not p.startswith("{")]
-    return parts[0] if parts else "root"
+    skip = set(strip_prefixes)
+    meaningful = [p for p in parts if p not in skip]
+    return meaningful[0] if meaningful else (parts[0] if parts else "root")
 
 
 def _operation_id(route: CollectedRoute, method: HttpMethod, suffix: str) -> str:
@@ -90,6 +92,7 @@ def _is_user_defined_method(view_class: type, method: HttpMethod) -> bool:
 def _model_view_operations(
     route: CollectedRoute,
     view_class: type[GenericModelView],
+    strip_prefixes: tuple[str, ...] = (),
 ) -> list[OperationSpec]:
     output_schema = _serializer_schema(view_class)
     if output_schema is None:
@@ -99,7 +102,7 @@ def _model_view_operations(
     in_schema = _input_schema(view_class)
     lookup_field = view_class.lookup_field
     is_detail = _path_has_lookup(route, lookup_field)
-    tag = _tag_from_path(route.path)
+    tag = _tag_from_path(route.path, strip_prefixes)
     security = security_for_view(view_class)
     requires_auth = bool(security)
 
@@ -221,10 +224,11 @@ def _orchestrator_output_schema(
 def _orchestrator_operations(
     route: CollectedRoute,
     view_class: type[GenericOrchestratorView],
+    strip_prefixes: tuple[str, ...] = (),
 ) -> list[OperationSpec]:
     in_schema = _input_schema(view_class)
     out_schema = _orchestrator_output_schema(view_class)
-    tag = _tag_from_path(route.path)
+    tag = _tag_from_path(route.path, strip_prefixes)
     security = security_for_view(view_class)
     requires_auth = bool(security)
     operations: list[OperationSpec] = []
@@ -262,15 +266,18 @@ def _orchestrator_operations(
     return operations
 
 
-def operations_for_route(route: CollectedRoute) -> list[OperationSpec]:
+def operations_for_route(
+    route: CollectedRoute,
+    strip_prefixes: tuple[str, ...] = (),
+) -> list[OperationSpec]:
     """Inspeciona uma rota e devolve todas as operações OpenAPI suportadas."""
     view_class = route.view_class
 
     if issubclass(view_class, GenericOrchestratorView):
-        return _orchestrator_operations(route, view_class)
+        return _orchestrator_operations(route, view_class, strip_prefixes)
 
     if issubclass(view_class, GenericModelView):
-        return _model_view_operations(route, view_class)
+        return _model_view_operations(route, view_class, strip_prefixes)
 
     return []
 

@@ -96,6 +96,7 @@ def build_spec(
     version: str,
     description: str | None = None,
     urlconf: str | None = None,
+    strip_path_prefixes: tuple[str, ...] = (),
 ) -> APISpec:
     """
     Constrói uma `APISpec` populada a partir da URLConf do projeto.
@@ -105,6 +106,9 @@ def build_spec(
         version: versão da API.
         description: descrição opcional.
         urlconf: módulo URLConf alternativo (default: settings.ROOT_URLCONF).
+        strip_path_prefixes: segmentos de path a ignorar ao derivar a tag de
+            agrupamento (ex.: `("api", "v1")` faz `/api/v1/processo-habilitacao/`
+            ser agrupado como `processo-habilitacao`).
     """
     spec_kwargs: dict[str, Any] = {
         "title": title,
@@ -128,7 +132,7 @@ def build_spec(
     path_params_by_path: dict[str, tuple[ParameterSpec, ...]] = {}
 
     for route in routes:
-        ops = operations_for_route(route)
+        ops = operations_for_route(route, strip_path_prefixes)
         if not ops:
             continue
         path_params_by_path.setdefault(route.path, route.path_parameters)
@@ -155,6 +159,7 @@ def generate_openapi(
     version: str,
     description: str | None = None,
     urlconf: str | None = None,
+    strip_path_prefixes: tuple[str, ...] = (),
 ) -> dict[str, Any]:
     """Atalho que devolve diretamente o dict OpenAPI 3."""
     return build_spec(
@@ -162,6 +167,7 @@ def generate_openapi(
         version=version,
         description=description,
         urlconf=urlconf,
+        strip_path_prefixes=strip_path_prefixes,
     ).to_dict()
 
 
