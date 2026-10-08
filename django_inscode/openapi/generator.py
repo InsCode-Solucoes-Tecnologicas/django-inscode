@@ -10,7 +10,11 @@ from marshmallow import Schema
 from django_inscode.openapi.collector import collect_routes
 from django_inscode.openapi.introspect import operations_for_route
 from django_inscode.openapi.schemas import ErrorResponseSchema, PaginationSchema
-from django_inscode.openapi.security import registered_schemes
+from django_inscode.openapi.security import (
+    SecurityRequirement,
+    default_security,
+    registered_schemes,
+)
 from django_inscode.openapi.types import (
     CollectedRoute,
     OperationSpec,
@@ -41,6 +45,7 @@ def _response_to_openapi(response: ResponseSpec) -> dict[str, Any]:
 def _operation_to_openapi(
     op: OperationSpec,
     path_parameters: tuple[ParameterSpec, ...],
+    global_security: list[SecurityRequirement],
 ) -> dict[str, Any]:
     parameters = [p.to_openapi() for p in (*path_parameters, *op.parameters)]
     out: dict[str, Any] = {
@@ -56,7 +61,7 @@ def _operation_to_openapi(
         out["description"] = op.description
     if parameters:
         out["parameters"] = parameters
-    if op.security:
+    if op.security != global_security:
         out["security"] = list(op.security)
     if op.request_body is not None:
         body_entry: dict[str, Any] = {
@@ -119,6 +124,10 @@ def build_spec(
     if description:
         spec_kwargs["info"] = {"description": description}
 
+    global_security = default_security()
+    if global_security:
+        spec_kwargs["security"] = global_security
+
     spec = APISpec(**spec_kwargs)
     spec.components.schema("Pagination", schema=PaginationSchema)
     spec.components.schema("ErrorResponse", schema=ErrorResponseSchema)
@@ -139,7 +148,7 @@ def build_spec(
         all_operations.extend(ops)
         for op in ops:
             operations_by_path[op.path][op.method] = _operation_to_openapi(
-                op, path_params_by_path[op.path]
+                op, path_params_by_path[op.path], global_security
             )
 
     for name, schema_class in _collect_referenced_schemas(all_operations).items():
