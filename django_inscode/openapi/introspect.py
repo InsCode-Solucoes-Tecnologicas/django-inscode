@@ -32,7 +32,7 @@ from django_inscode.views import (
 )
 
 _HTTP_METHODS: tuple[HttpMethod, ...] = ("get", "post", "put", "patch", "delete")
-_ERROR_REF: dict[str, str] = {"$ref": "#/components/schemas/ErrorResponse"}
+_ERROR_REF: dict[str, str] = {"$ref": "#/components/schemas/ErrorResponseSchema"}
 _BAD_REQUEST = ResponseSpec(400, "Requisição inválida.", schema=_ERROR_REF)
 _UNAUTHORIZED = ResponseSpec(401, "Não autenticado.", schema=_ERROR_REF)
 _FORBIDDEN = ResponseSpec(403, "Acesso negado.", schema=_ERROR_REF)

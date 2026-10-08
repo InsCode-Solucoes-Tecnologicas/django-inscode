@@ -5,6 +5,11 @@ from typing import Any, cast
 
 from apispec import APISpec
 from apispec.ext.marshmallow import MarshmallowPlugin
+from apispec.ext.marshmallow.common import (
+    MODIFIERS,
+    make_schema_key,
+    resolve_schema_instance,
+)
 from marshmallow import Schema, fields, validate
 
 from django_inscode.openapi.collector import collect_routes
@@ -43,6 +48,40 @@ def _sort_unordered_choices(
     if not has_unordered:
         return {}
     return {"enum": sorted(ret["enum"], key=lambda v: (v is None, str(v)))}
+
+
+class _SchemaNamer:
+    """
+    Nomeia componentes pelo nome da classe (o resolver padrão do apispec remove o
+    `Schema`).
+
+    O nome da classe fica com a classe sem `only`/`exclude`/etc. Projeções e
+    classes homônimas de outros módulos ganham sufixo numérico, para que fiquem
+    visíveis na spec.
+    """
+
+    def __init__(self) -> None:
+        self._names: dict[tuple[Any, ...], str] = {}
+        self._taken: set[str] = set()
+
+    def __call__(self, schema: type[Schema] | Schema) -> str:
+        instance = resolve_schema_instance(schema)
+        key = make_schema_key(instance)
+        if key in self._names:
+            return self._names[key]
+
+        base = type(instance).__name__
+        is_projection = any(getattr(instance, m) for m in MODIFIERS)
+        name = base
+        suffix = 1
+        while is_projection or name in self._taken:
+            name = f"{base}{suffix}"
+            suffix += 1
+            is_projection = False
+
+        self._names[key] = name
+        self._taken.add(name)
+        return name
 
 
 _JSON_TYPES: tuple[tuple[type, str], ...] = (
@@ -157,7 +196,8 @@ def build_spec(
             agrupamento (ex.: `("api", "v1")` faz `/api/v1/processo-habilitacao/`
             ser agrupado como `processo-habilitacao`).
     """
-    marshmallow_plugin = MarshmallowPlugin()
+    namer = _SchemaNamer()
+    marshmallow_plugin = MarshmallowPlugin(schema_name_resolver=namer)
     spec_kwargs: dict[str, Any] = {
         "title": title,
         "version": version,
@@ -175,8 +215,8 @@ def build_spec(
     assert marshmallow_plugin.converter is not None
     marshmallow_plugin.converter.add_attribute_function(_sort_unordered_choices)
     marshmallow_plugin.converter.add_attribute_function(_describe_constant)
-    spec.components.schema("Pagination", schema=PaginationSchema)
-    spec.components.schema("ErrorResponse", schema=ErrorResponseSchema)
+    for base_schema in (PaginationSchema, ErrorResponseSchema):
+        spec.components.schema(namer(base_schema), schema=base_schema)
 
     for name, scheme in registered_schemes().items():
         spec.components.security_scheme(name, scheme)
@@ -197,10 +237,18 @@ def build_spec(
                 op, path_params_by_path[op.path], global_security
             )
 
-    for name, schema_class in _collect_referenced_schemas(all_operations).items():
-        if name in ("Pagination", "ErrorResponse"):
-            continue
-        spec.components.schema(name, schema=schema_class)
+    referenced = _collect_referenced_schemas(all_operations)
+    # As operações referenciam esses schemas pelo nome da classe: reservá-los antes
+    # de registrar qualquer um impede que um aninhado homônimo tome o nome.
+    for name, schema_class in referenced.items():
+        if namer(schema_class) != name:
+            raise ValueError(
+                f"Dois schemas referenciados por operações se chamam {name}; "
+                "renomeie um deles."
+            )
+    for name, schema_class in referenced.items():
+        if name not in spec.components.schemas:
+            spec.components.schema(name, schema=schema_class)
 
     extra_components = {
         name: component

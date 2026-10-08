@@ -33,7 +33,7 @@ def paginated_response_schema(item_schema_name: str) -> dict[str, Any]:
     return {
         "type": "object",
         "properties": {
-            "pagination": {"$ref": "#/components/schemas/Pagination"},
+            "pagination": {"$ref": "#/components/schemas/PaginationSchema"},
             "results": {
                 "type": "array",
                 "items": {"$ref": f"#/components/schemas/{item_schema_name}"},
