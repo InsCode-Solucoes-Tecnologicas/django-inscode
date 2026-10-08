@@ -65,6 +65,7 @@ class _SchemaNamer:
     def __init__(self) -> None:
         self._names: dict[tuple[Any, ...], str] = {}
         self._taken: set[str] = set()
+        self.instances: dict[str, Schema] = {}
 
     def __call__(self, schema: type[Schema] | Schema) -> str:
         instance = resolve_schema_instance(schema)
@@ -83,6 +84,7 @@ class _SchemaNamer:
 
         self._names[key] = name
         self._taken.add(name)
+        self.instances[name] = instance
         return name
 
 
@@ -140,6 +142,62 @@ def _point_refs_to_partial(node: Any) -> list[str]:
         for item in node:
             found.extend(_point_refs_to_partial(item))
     return found
+
+
+def _referenced_names(node: Any) -> list[str]:
+    if isinstance(node, dict):
+        ref = node.get("$ref")
+        names = (
+            [ref.removeprefix(_SCHEMA_REF_PREFIX)]
+            if isinstance(ref, str) and ref.startswith(_SCHEMA_REF_PREFIX)
+            else []
+        )
+        return names + [n for value in node.values() for n in _referenced_names(value)]
+    if isinstance(node, list):
+        return [n for item in node for n in _referenced_names(item)]
+    return []
+
+
+def _reachable(spec: APISpec, roots: list[str]) -> set[str]:
+    schemas = spec.components.schemas
+    seen: set[str] = set()
+    pending = list(roots)
+    while pending:
+        name = pending.pop()
+        if name in seen or name not in schemas:
+            continue
+        seen.add(name)
+        pending.extend(_referenced_names(schemas[name]))
+    return seen
+
+
+def _shape_output_schemas(
+    spec: APISpec,
+    namer: _SchemaNamer,
+    output_roots: list[str],
+    input_roots: list[str],
+) -> None:
+    """
+    Nos schemas usados só em respostas, remove os campos `load_only` e marca os
+    demais como `required`, exceto os com `metadata={"output_optional": True}`. Sem
+    isso, clientes gerados tratam todo campo de saída como opcional.
+    """
+    output_only = _reachable(spec, output_roots) - _reachable(spec, input_roots)
+    for name in output_only:
+        schema = namer.instances.get(name)
+        if schema is None:
+            continue
+        component = spec.components.schemas[name]
+        properties = component.get("properties", {})
+        required = []
+        for field_name, field in schema.fields.items():
+            prop = field.data_key or field_name
+            if field.load_only:
+                properties.pop(prop, None)
+            elif prop in properties and not field.metadata.get("output_optional"):
+                required.append(prop)
+        if required:
+            component["required"] = required
 
 
 def _register_partial_variants(spec: APISpec, roots: dict[str, frozenset[str]]) -> None:
@@ -322,6 +380,26 @@ def build_spec(
             for op in all_operations
             if op.request_body is not None and op.request_body.partial
         },
+    )
+
+    _shape_output_schemas(
+        spec,
+        namer,
+        output_roots=[
+            *(
+                schema.__name__
+                for op in all_operations
+                for response in op.responses
+                if isinstance(schema := response.schema, type)
+                and issubclass(schema, Schema)
+            ),
+            *(name for op in all_operations for name in op.extra_components),
+        ],
+        input_roots=[
+            op.request_body.schema.__name__
+            for op in all_operations
+            if op.request_body is not None
+        ],
     )
 
     for path, operations in operations_by_path.items():
