@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import copy
 from collections import defaultdict
 from typing import Any, cast
 
@@ -28,6 +29,7 @@ from django_inscode.openapi.types import (
 )
 
 _OPENAPI_VERSION = "3.1.0"
+_SCHEMA_REF_PREFIX = "#/components/schemas/"
 
 
 def _sort_unordered_choices(
@@ -107,7 +109,61 @@ def _describe_constant(
 
 
 def _schema_ref(schema_class: type[Schema]) -> dict[str, str]:
-    return {"$ref": f"#/components/schemas/{schema_class.__name__}"}
+    return {"$ref": f"{_SCHEMA_REF_PREFIX}{schema_class.__name__}"}
+
+
+def _partial_name(name: str) -> str:
+    return f"Partial{name}"
+
+
+def _non_updatable_properties(schema_class: type[Schema]) -> frozenset[str]:
+    schema = resolve_schema_instance(schema_class)
+    return frozenset(
+        field.data_key or field_name
+        for field_name, field in schema.fields.items()
+        if not field.metadata.get("updatable", True)
+    )
+
+
+def _point_refs_to_partial(node: Any) -> list[str]:
+    """Troca cada `$ref` de schema por sua variante parcial; devolve os nomes trocados."""
+    found: list[str] = []
+    if isinstance(node, dict):
+        ref = node.get("$ref")
+        if isinstance(ref, str) and ref.startswith(_SCHEMA_REF_PREFIX):
+            name = ref.removeprefix(_SCHEMA_REF_PREFIX)
+            node["$ref"] = f"{_SCHEMA_REF_PREFIX}{_partial_name(name)}"
+            found.append(name)
+        for value in node.values():
+            found.extend(_point_refs_to_partial(value))
+    elif isinstance(node, list):
+        for item in node:
+            found.extend(_point_refs_to_partial(item))
+    return found
+
+
+def _register_partial_variants(spec: APISpec, roots: dict[str, frozenset[str]]) -> None:
+    """
+    Registra `Partial<Nome>` para os bodies de PATCH, espelhando o runtime: nenhum
+    campo é obrigatório (inclusive nos aninhados) e os não atualizáveis do primeiro
+    nível são descartados.
+    """
+    schemas = spec.components.schemas
+    variants: dict[str, dict[str, Any]] = {}
+    pending = list(roots)
+    while pending:
+        name = pending.pop()
+        if name in variants:
+            continue
+        component = copy.deepcopy(schemas[name])
+        component.pop("required", None)
+        for prop in roots.get(name, frozenset()):
+            component.get("properties", {}).pop(prop, None)
+        pending.extend(_point_refs_to_partial(component))
+        variants[name] = component
+
+    for name, component in variants.items():
+        spec.components.schema(_partial_name(name), component=component)
 
 
 def _response_to_openapi(response: ResponseSpec) -> dict[str, Any]:
@@ -145,17 +201,16 @@ def _operation_to_openapi(
     if op.security != global_security:
         out["security"] = list(op.security)
     if op.request_body is not None:
-        body_entry: dict[str, Any] = {
-            "required": op.request_body.required,
-            "content": {
-                op.request_body.content_type: {
-                    "schema": _schema_ref(op.request_body.schema)
-                }
-            },
-        }
+        body_schema = _schema_ref(op.request_body.schema)
         if op.request_body.partial:
-            body_entry["description"] = "PATCH: todos os campos são opcionais."
-        out["requestBody"] = body_entry
+            body_schema = {
+                "$ref": _SCHEMA_REF_PREFIX
+                + _partial_name(op.request_body.schema.__name__)
+            }
+        out["requestBody"] = {
+            "required": op.request_body.required,
+            "content": {op.request_body.content_type: {"schema": body_schema}},
+        }
     return out
 
 
@@ -257,6 +312,17 @@ def build_spec(
     }
     for name, component in extra_components.items():
         spec.components.schema(name, component=component)
+
+    _register_partial_variants(
+        spec,
+        {
+            op.request_body.schema.__name__: _non_updatable_properties(
+                op.request_body.schema
+            )
+            for op in all_operations
+            if op.request_body is not None and op.request_body.partial
+        },
+    )
 
     for path, operations in operations_by_path.items():
         spec.path(path=path, operations=operations)
