@@ -156,6 +156,14 @@ def build_spec(
             continue
         spec.components.schema(name, schema=schema_class)
 
+    extra_components = {
+        name: component
+        for op in all_operations
+        for name, component in op.extra_components.items()
+    }
+    for name, component in extra_components.items():
+        spec.components.schema(name, component=component)
+
     for path, operations in operations_by_path.items():
         spec.path(path=path, operations=operations)
 

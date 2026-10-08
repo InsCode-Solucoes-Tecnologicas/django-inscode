@@ -66,6 +66,7 @@ class OperationSpec:
     request_body: RequestBodySpec | None = None
     responses: list[ResponseSpec] = field(default_factory=list)
     extra_schemas: tuple[type[Schema], ...] = ()
+    extra_components: dict[str, dict[str, Any]] = field(default_factory=dict)
     security: list[dict[str, list[str]]] = field(default_factory=list)
 
 

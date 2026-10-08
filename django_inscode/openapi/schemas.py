@@ -23,6 +23,11 @@ class ErrorResponseSchema(Schema):
     errors = fields.Raw(required=False)
 
 
+def paginated_schema_name(item_schema_name: str) -> str:
+    """Nome do componente que representa uma página de `item_schema_name`."""
+    return f"Paginated{item_schema_name}"
+
+
 def paginated_response_schema(item_schema_name: str) -> dict[str, Any]:
     """Constrói o JSON Schema (OpenAPI) de uma resposta paginada de `item_schema_name`."""
     return {
@@ -41,5 +46,6 @@ def paginated_response_schema(item_schema_name: str) -> dict[str, Any]:
 __all__ = [
     "PaginationSchema",
     "ErrorResponseSchema",
+    "paginated_schema_name",
     "paginated_response_schema",
 ]
