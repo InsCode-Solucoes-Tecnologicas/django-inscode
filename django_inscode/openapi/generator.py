@@ -5,7 +5,7 @@ from typing import Any, cast
 
 from apispec import APISpec
 from apispec.ext.marshmallow import MarshmallowPlugin
-from marshmallow import Schema
+from marshmallow import Schema, fields, validate
 
 from django_inscode.openapi.collector import collect_routes
 from django_inscode.openapi.introspect import operations_for_route
@@ -23,6 +23,48 @@ from django_inscode.openapi.types import (
 )
 
 _OPENAPI_VERSION = "3.1.0"
+
+
+def _sort_unordered_choices(
+    self: Any, field: fields.Field, ret: dict[str, Any], **kwargs: Any
+) -> dict[str, Any]:
+    """
+    Ordena o `enum` de campos cujo `OneOf` recebe `set`/`frozenset`.
+
+    A ordem de iteração de um set de strings muda a cada processo, o que torna
+    a spec instável entre gerações. Listas e tuplas mantêm a ordem declarada.
+    """
+    if "enum" not in ret:
+        return {}
+    has_unordered = any(
+        isinstance(v, validate.OneOf) and isinstance(v.choices, (set, frozenset))
+        for v in field.validators
+    )
+    if not has_unordered:
+        return {}
+    return {"enum": sorted(ret["enum"], key=lambda v: (v is None, str(v)))}
+
+
+_JSON_TYPES: tuple[tuple[type, str], ...] = (
+    (bool, "boolean"),
+    (int, "integer"),
+    (float, "number"),
+    (str, "string"),
+)
+
+
+def _describe_constant(
+    self: Any, field: fields.Field, ret: dict[str, Any], **kwargs: Any
+) -> dict[str, Any]:
+    """O apispec não descreve `fields.Constant`; documenta o valor fixo como `const`."""
+    if not isinstance(field, fields.Constant):
+        return {}
+    described: dict[str, Any] = {"const": field.constant}
+    for python_type, json_type in _JSON_TYPES:
+        if isinstance(field.constant, python_type):
+            described["type"] = json_type
+            break
+    return described
 
 
 def _schema_ref(schema_class: type[Schema]) -> dict[str, str]:
@@ -115,11 +157,12 @@ def build_spec(
             agrupamento (ex.: `("api", "v1")` faz `/api/v1/processo-habilitacao/`
             ser agrupado como `processo-habilitacao`).
     """
+    marshmallow_plugin = MarshmallowPlugin()
     spec_kwargs: dict[str, Any] = {
         "title": title,
         "version": version,
         "openapi_version": _OPENAPI_VERSION,
-        "plugins": [MarshmallowPlugin()],
+        "plugins": [marshmallow_plugin],
     }
     if description:
         spec_kwargs["info"] = {"description": description}
@@ -129,6 +172,9 @@ def build_spec(
         spec_kwargs["security"] = global_security
 
     spec = APISpec(**spec_kwargs)
+    assert marshmallow_plugin.converter is not None
+    marshmallow_plugin.converter.add_attribute_function(_sort_unordered_choices)
+    marshmallow_plugin.converter.add_attribute_function(_describe_constant)
     spec.components.schema("Pagination", schema=PaginationSchema)
     spec.components.schema("ErrorResponse", schema=ErrorResponseSchema)
 
