@@ -36,7 +36,7 @@ def register_security_scheme(
     Args:
         auth_class: classe (ou base) a ser detectada nas views.
         name: identificador do scheme em `components.securitySchemes`.
-        scheme: objeto Security Scheme (https://spec.openapis.org/oas/v3.0.3#security-scheme-object).
+        scheme: objeto Security Scheme (https://spec.openapis.org/oas/v3.1.0#security-scheme-object).
     """
     current = _REGISTRY.get(auth_class, ())
     _REGISTRY[auth_class] = (*(s for s in current if s[0] != name), (name, scheme))

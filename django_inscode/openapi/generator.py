@@ -22,7 +22,7 @@ from django_inscode.openapi.types import (
     ResponseSpec,
 )
 
-_OPENAPI_VERSION = "3.0.3"
+_OPENAPI_VERSION = "3.1.0"
 
 
 def _schema_ref(schema_class: type[Schema]) -> dict[str, str]:
