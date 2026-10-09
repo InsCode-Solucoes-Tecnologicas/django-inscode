@@ -8,7 +8,6 @@ from django.http import HttpRequest, HttpResponse, JsonResponse
 from django.utils.module_loading import import_string
 from django.views import View
 
-from django_inscode.utils import marshmallow as schema_utils
 
 from . import exceptions, mixins
 from .authentication import BaseAuthentication
@@ -206,35 +205,29 @@ class GenericView(View):
         """
         return self.fields or set()
 
-    def verify_fields(self, data: Data, request: HttpRequest | None = None) -> None:
+    def verify_fields(self, data: Data, partial: bool = False) -> None:
         """
         Verifica se todos os campos obrigatórios estão presentes nos dados.
 
         Se input_schema estiver definido, usa validação marshmallow.
-        Para PATCH, permite validação parcial (partial=True).
         Caso contrário, usa validação simples de campos.
 
         Args:
             data: Dados a serem validados
-            request: HttpRequest para detectar método HTTP (opcional para backward compatibility)
+            partial: Se nenhum campo é obrigatório
         """
         if self.input_schema is not None:
-            self._validate_with_schema(data, request)
-        else:
-            if not (request and request.method == "PATCH"):
-                self._validate_simple_fields(data)
+            self._validate_with_schema(data, partial)
+        elif not partial:
+            self._validate_simple_fields(data)
 
-    def _validate_with_schema(
-        self, data: Data, request: HttpRequest | None = None
-    ) -> None:
+    def _validate_with_schema(self, data: Data, partial: bool = False) -> None:
         """
         Valida os dados usando o schema marshmallow definido.
 
-        Para PATCH, usa partial=True para permitir validação parcial.
-
         Args:
             data: Dados a serem validados
-            request: HttpRequest para detectar método HTTP
+            partial: Se nenhum campo é obrigatório
 
         Raises:
             exceptions.BadRequest: Se a validação falhar
@@ -246,22 +239,8 @@ class GenericView(View):
             )
 
         try:
-            is_patch = request is not None and request.method == "PATCH"
-
             assert self.input_schema is not None
-            schema = self.input_schema()
-            validated_data = (
-                schema.load(
-                    {
-                        k: v
-                        for k, v in data.items()
-                        if k in schema_utils.get_updatable_fields(schema)
-                    },
-                    partial=True,
-                )
-                if is_patch
-                else schema.load(data)
-            )
+            validated_data = self.input_schema().load(data, partial=partial)
 
             data.clear()
             data.update(validated_data)
@@ -380,7 +359,7 @@ class GenericOrchestratorView(GenericView):
             exceptions.Forbidden: Se as permissões forem negadas.
         """
         data = request.data
-        self.verify_fields(data, request)
+        self.verify_fields(data)
         context = self.get_context(request)
         service = self.get_service()
 

@@ -10,6 +10,7 @@ if TYPE_CHECKING:
 
 from . import exceptions, settings
 from .types import Context, Data, Id
+from .utils import marshmallow as schema_utils
 
 
 class ServiceCreateMixin[T: Model]:
@@ -145,7 +146,7 @@ class ViewCreateModelMixin:
         """
         data = request.data
 
-        self.verify_fields(data, request)
+        self.verify_fields(data)
 
         context = self.get_context(request)
         obj = self.service.perform_action("create", data=data, context=context)
@@ -352,7 +353,11 @@ class ViewUpdateModelMixin:
             JsonResponse: Resposta JSON contendo os dados da instância atualizada.
         """
         data = request.data
-        self.verify_fields(data, request)
+        if self.input_schema is not None:
+            updatable = schema_utils.get_updatable_fields(self.input_schema())
+            for key in set(data) - updatable:
+                del data[key]
+        self.verify_fields(data, partial=True)
         return self._update(request, *args, **kwargs)
 
     def put(self, request: HttpRequest, *args, **kwargs) -> JsonResponse:
@@ -371,7 +376,7 @@ class ViewUpdateModelMixin:
             exceptions.BadRequest: Se os campos obrigatórios não forem fornecidos ou forem inválidos.
         """
         data = request.data
-        self.verify_fields(data, request)
+        self.verify_fields(data)
         return self._update(request, *args, **kwargs)
 
 
