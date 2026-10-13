@@ -14,6 +14,7 @@ from .authentication import BaseAuthentication
 from .permissions import BasePermission
 from .serializers import SerializerFactory, SerializerInterface
 from .services import GenericModelService, OrchestratorService
+from .metadata import metadata
 from .types import Context, Data
 
 try:
@@ -338,6 +339,7 @@ class GenericOrchestratorView(GenericView):
             return result
         return SerializerFactory.get_serializer(self.serializer).serialize(result)
 
+    @metadata({"openapi": {"responses": [{"status_code": 200, "description": "OK."}]}})
     def build_response(self, result: Any) -> HttpResponse:
         """Monta a resposta HTTP a partir do retorno de `OrchestratorService.execute`."""
         return JsonResponse(self.serialize_result(result), status=200)

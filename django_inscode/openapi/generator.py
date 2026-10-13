@@ -14,13 +14,17 @@ from apispec.ext.marshmallow.common import (
 from marshmallow import Schema, fields, validate
 
 from django_inscode.openapi.collector import collect_routes
-from django_inscode.openapi.introspect import operations_for_route
+from django_inscode.openapi.introspect import (
+    method_openapi_metadata,
+    operations_for_route,
+)
 from django_inscode.openapi.schemas import ErrorResponseSchema, PaginationSchema
 from django_inscode.openapi.security import (
     SecurityRequirement,
     default_security,
     registered_schemes,
 )
+from django_inscode.types import ParameterLocation, ParameterOverride
 from django_inscode.openapi.types import (
     CollectedRoute,
     OperationSpec,
@@ -108,6 +112,44 @@ def _describe_constant(
             described["type"] = json_type
             break
     return described
+
+
+def _parameter_override(param: dict[str, Any]) -> ParameterOverride:
+    override: ParameterOverride = {
+        "name": param["name"],
+        "location": param["in"],
+        "schema": param["schema"],
+        "required": param.get("required", False),
+    }
+    if "description" in param:
+        override["description"] = param["description"]
+    return override
+
+
+def _describe_method_field(
+    self: Any, field: fields.Field, ret: dict[str, Any], **kwargs: Any
+) -> dict[str, Any]:
+    """Descreve um `fields.Method` pelo `field` declarado no metadata do método."""
+    if not isinstance(field, fields.Method) or not field.serialize_method_name:
+        return {}
+    described = method_openapi_metadata(
+        type(field.parent), field.serialize_method_name
+    ).get("field")
+    return self.field2property(described) if described is not None else {}
+
+
+def schema_to_parameters(
+    schema: type[Schema] | Schema, location: ParameterLocation = "query"
+) -> list[ParameterOverride]:
+    """Converte os campos de um schema em parâmetros, para o metadata de métodos."""
+    plugin = MarshmallowPlugin()
+    APISpec(title="", version="", openapi_version=_OPENAPI_VERSION, plugins=[plugin])
+    assert plugin.converter is not None
+    plugin.converter.add_attribute_function(_sort_unordered_choices)
+    return [
+        _parameter_override(p)
+        for p in plugin.converter.schema2parameters(schema, location=location)
+    ]
 
 
 def _schema_ref(schema_class: type[Schema]) -> dict[str, str]:
@@ -242,7 +284,10 @@ def _operation_to_openapi(
     path_parameters: tuple[ParameterSpec, ...],
     global_security: list[SecurityRequirement],
 ) -> dict[str, Any]:
-    parameters = [p.to_openapi() for p in (*path_parameters, *op.parameters)]
+    # Parâmetros da operação (inclusive os sobrescritos via metadata) prevalecem
+    # sobre os de path com o mesmo `(name, in)`, como no próprio OpenAPI.
+    by_key = {(p.name, p.location): p for p in (*path_parameters, *op.parameters)}
+    parameters = [p.to_openapi() for p in by_key.values()]
     out: dict[str, Any] = {
         "operationId": op.operation_id,
         "tags": op.tags,
@@ -328,6 +373,7 @@ def build_spec(
     assert marshmallow_plugin.converter is not None
     marshmallow_plugin.converter.add_attribute_function(_sort_unordered_choices)
     marshmallow_plugin.converter.add_attribute_function(_describe_constant)
+    marshmallow_plugin.converter.add_attribute_function(_describe_method_field)
     for base_schema in (PaginationSchema, ErrorResponseSchema):
         spec.components.schema(namer(base_schema), schema=base_schema)
 
@@ -426,4 +472,4 @@ def generate_openapi(
     ).to_dict()
 
 
-__all__ = ["build_spec", "generate_openapi"]
+__all__ = ["build_spec", "generate_openapi", "schema_to_parameters"]

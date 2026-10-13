@@ -23,9 +23,11 @@ from django_inscode.openapi.types import (
     CollectedRoute,
     HttpMethod,
     OperationSpec,
+    ParameterSpec,
     RequestBodySpec,
     ResponseSpec,
 )
+from django_inscode.types import MethodOpenAPIMetadata, ResponseOverride
 from django_inscode.views import (
     GenericModelView,
     GenericOrchestratorView,
@@ -33,11 +35,13 @@ from django_inscode.views import (
 
 _HTTP_METHODS: tuple[HttpMethod, ...] = ("get", "post", "put", "patch", "delete")
 _ERROR_REF: dict[str, str] = {"$ref": "#/components/schemas/ErrorResponseSchema"}
-_BAD_REQUEST = ResponseSpec(400, "Requisição inválida.", schema=_ERROR_REF)
-_UNAUTHORIZED = ResponseSpec(401, "Não autenticado.", schema=_ERROR_REF)
-_FORBIDDEN = ResponseSpec(403, "Acesso negado.", schema=_ERROR_REF)
-_UNPROCESSABLE = ResponseSpec(422, "Entidade inválida.", schema=_ERROR_REF)
-_NOT_FOUND_RESPONSE = ResponseSpec(404, "Recurso não encontrado.", schema=_ERROR_REF)
+_ERROR_DESCRIPTIONS = {
+    400: "Requisição inválida.",
+    401: "Não autenticado.",
+    403: "Acesso negado.",
+    404: "Recurso não encontrado.",
+    422: "Entidade inválida.",
+}
 
 
 def _is_marshmallow_schema(value: object) -> bool:
@@ -70,16 +74,74 @@ def _input_schema(view_class: type) -> type[Schema] | None:
     return cast(type[Schema], schema) if _is_marshmallow_schema(schema) else None
 
 
-def _build_default_responses(
+def default_error_responses(
     *, requires_auth: bool, include_not_found: bool = False
+) -> list[ResponseOverride]:
+    """Respostas de erro padrão das operações geradas, no formato de `OperationOverride`."""
+    codes = [
+        400,
+        *((401, 403) if requires_auth else ()),
+        422,
+        *((404,) if include_not_found else ()),
+    ]
+    return [
+        {
+            "status_code": code,
+            "description": _ERROR_DESCRIPTIONS[code],
+            "schema": _ERROR_REF,
+        }
+        for code in codes
+    ]
+
+
+def method_openapi_metadata(owner: type, method_name: str) -> MethodOpenAPIMetadata:
+    """Metadados OpenAPI do método, herdados da base quando ele é sobrescrito sem eles."""
+    for klass in owner.__mro__:
+        method = vars(klass).get(method_name)
+        if method is not None and hasattr(method, "metadata"):
+            return method.metadata.get("openapi", {})
+    return {}
+
+
+def _declared_parameters(view_class: type, method_name: str) -> list[ParameterSpec]:
+    return [
+        ParameterSpec(**p)
+        for p in method_openapi_metadata(view_class, method_name).get("parameters", [])
+    ]
+
+
+def _responses(
+    view_class: type,
+    method_name: str,
+    default_schema: type[Schema] | dict[str, Any] | None,
+    *,
+    requires_auth: bool,
+    include_not_found: bool = False,
 ) -> list[ResponseSpec]:
-    responses: list[ResponseSpec] = [_BAD_REQUEST]
-    if requires_auth:
-        responses.extend((_UNAUTHORIZED, _FORBIDDEN))
-    responses.append(_UNPROCESSABLE)
-    if include_not_found:
-        responses.append(_NOT_FOUND_RESPONSE)
-    return responses
+    """
+    Respostas declaradas no metadata do método (sem `schema`, usa `default_schema`)
+    seguidas das respostas de erro padrão que ele não declarou.
+    """
+    declared = [
+        ResponseSpec(
+            r["status_code"],
+            r["description"],
+            schema=r["schema"] if "schema" in r else default_schema,
+        )
+        for r in method_openapi_metadata(view_class, method_name).get("responses", [])
+    ]
+    declared_codes = {r.status_code for r in declared}
+    defaults = default_error_responses(
+        requires_auth=requires_auth, include_not_found=include_not_found
+    )
+    return [
+        *declared,
+        *(
+            ResponseSpec(**r)
+            for r in defaults
+            if r["status_code"] not in declared_codes
+        ),
+    ]
 
 
 def _is_user_defined_method(view_class: type, method: HttpMethod) -> bool:
@@ -120,10 +182,9 @@ def _model_view_operations(
                 request_body=(
                     RequestBodySpec(schema=in_schema) if in_schema else None
                 ),
-                responses=[
-                    ResponseSpec(201, "Criado.", schema=output_schema),
-                    *_build_default_responses(requires_auth=requires_auth),
-                ],
+                responses=_responses(
+                    view_class, "post", output_schema, requires_auth=requires_auth
+                ),
                 security=security,
             )
         )
@@ -137,12 +198,13 @@ def _model_view_operations(
                     operation_id=_operation_id(route, "get", "retrieve"),
                     tags=[tag],
                     summary=f"Recupera um {tag} pelo identificador.",
-                    responses=[
-                        ResponseSpec(200, "OK.", schema=output_schema),
-                        *_build_default_responses(
-                            requires_auth=requires_auth, include_not_found=True
-                        ),
-                    ],
+                    responses=_responses(
+                        view_class,
+                        "get",
+                        output_schema,
+                        requires_auth=requires_auth,
+                        include_not_found=True,
+                    ),
                     security=security,
                 )
             )
@@ -159,15 +221,13 @@ def _model_view_operations(
                     operation_id=_operation_id(route, "get", "list"),
                     tags=[tag],
                     summary=f"Lista {tag} com paginação.",
-                    parameters=list_params,
-                    responses=[
-                        ResponseSpec(
-                            200,
-                            "OK.",
-                            schema={"$ref": f"#/components/schemas/{paginated_name}"},
-                        ),
-                        *_build_default_responses(requires_auth=requires_auth),
-                    ],
+                    parameters=[*list_params, *_declared_parameters(view_class, "get")],
+                    responses=_responses(
+                        view_class,
+                        "get",
+                        {"$ref": f"#/components/schemas/{paginated_name}"},
+                        requires_auth=requires_auth,
+                    ),
                     extra_schemas=(output_schema,),
                     extra_components={
                         paginated_name: paginated_response_schema(
@@ -195,12 +255,13 @@ def _model_view_operations(
                         if in_schema
                         else None
                     ),
-                    responses=[
-                        ResponseSpec(200, "OK.", schema=output_schema),
-                        *_build_default_responses(
-                            requires_auth=requires_auth, include_not_found=True
-                        ),
-                    ],
+                    responses=_responses(
+                        view_class,
+                        method,
+                        output_schema,
+                        requires_auth=requires_auth,
+                        include_not_found=True,
+                    ),
                     security=security,
                 )
             )
@@ -213,12 +274,13 @@ def _model_view_operations(
                 operation_id=_operation_id(route, "delete", "delete"),
                 tags=[tag],
                 summary=f"Remove um {tag}.",
-                responses=[
-                    ResponseSpec(204, "Sem conteúdo."),
-                    *_build_default_responses(
-                        requires_auth=requires_auth, include_not_found=True
-                    ),
-                ],
+                responses=_responses(
+                    view_class,
+                    "delete",
+                    output_schema,
+                    requires_auth=requires_auth,
+                    include_not_found=True,
+                ),
                 security=security,
             )
         )
@@ -245,7 +307,7 @@ def _orchestrator_operations(
     requires_auth = bool(security)
     operations: list[OperationSpec] = []
 
-    response_schema: type[Schema] | dict[str, Any] = (
+    default_schema: type[Schema] | dict[str, Any] = (
         out_schema
         if out_schema is not None
         else {"type": "object", "additionalProperties": True}
@@ -268,10 +330,13 @@ def _orchestrator_operations(
                     if in_schema and method != "get"
                     else None
                 ),
-                responses=[
-                    ResponseSpec(200, "OK.", schema=response_schema),
-                    *_build_default_responses(requires_auth=requires_auth),
-                ],
+                parameters=_declared_parameters(view_class, method),
+                responses=_responses(
+                    view_class,
+                    "build_response",
+                    default_schema,
+                    requires_auth=requires_auth,
+                ),
                 security=security,
             )
         )
@@ -294,4 +359,4 @@ def operations_for_route(
     return []
 
 
-__all__ = ["operations_for_route"]
+__all__ = ["default_error_responses", "operations_for_route"]

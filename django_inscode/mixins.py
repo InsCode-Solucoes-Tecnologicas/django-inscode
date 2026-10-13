@@ -9,8 +9,9 @@ if TYPE_CHECKING:
     from django_inscode.services import GenericModelService
 
 from . import exceptions, settings
-from .types import Context, Data, Id
 from .utils import marshmallow as schema_utils
+from .metadata import metadata
+from .types import Context, Data, Id
 
 
 class ServiceCreateMixin[T: Model]:
@@ -131,6 +132,9 @@ class ViewCreateModelMixin:
         post: Processa requisições POST para criar uma nova instância.
     """
 
+    @metadata(
+        {"openapi": {"responses": [{"status_code": 201, "description": "Criado."}]}}
+    )
     def post(self, request: HttpRequest, *args, **kwargs) -> JsonResponse:
         """
         Processa requisições POST para criar uma nova instância.
@@ -282,6 +286,7 @@ class ViewRetrieveModelMixin:
 
         return JsonResponse(response_data, status=200)
 
+    @metadata({"openapi": {"responses": [{"status_code": 200, "description": "OK."}]}})
     def get(self, request: HttpRequest, *args, **kwargs) -> JsonResponse:
         """
         Decide entre `retrieve` ou `list` com base na presença de um identificador.
@@ -340,6 +345,7 @@ class ViewUpdateModelMixin:
 
         return JsonResponse(serialized_obj, status=200)
 
+    @metadata({"openapi": {"responses": [{"status_code": 200, "description": "OK."}]}})
     def patch(self, request: HttpRequest, *args, **kwargs) -> JsonResponse:
         """
         Atualiza parcialmente uma instância do modelo (requisição PATCH).
@@ -360,6 +366,7 @@ class ViewUpdateModelMixin:
         self.verify_fields(data, partial=True)
         return self._update(request, *args, **kwargs)
 
+    @metadata({"openapi": {"responses": [{"status_code": 200, "description": "OK."}]}})
     def put(self, request: HttpRequest, *args, **kwargs) -> JsonResponse:
         """
         Atualiza completamente uma instância do modelo (requisição PUT).
@@ -388,6 +395,15 @@ class ViewDeleteModelMixin:
        delete: Exclui uma instância do modelo pelo ID.
     """
 
+    @metadata(
+        {
+            "openapi": {
+                "responses": [
+                    {"status_code": 204, "description": "Sem conteúdo.", "schema": None}
+                ]
+            }
+        }
+    )
     def delete(self, request: HttpRequest, *args, **kwargs) -> JsonResponse:
         """
         Exclui uma instância do modelo pelo ID.
@@ -421,6 +437,15 @@ class ViewNoContentMixin:
     Responde `204 No Content` sem corpo, descartando o retorno do service.
     """
 
+    @metadata(
+        {
+            "openapi": {
+                "responses": [
+                    {"status_code": 204, "description": "Sem conteúdo.", "schema": None}
+                ]
+            }
+        }
+    )
     def build_response(self, result: Any) -> HttpResponse:
         return HttpResponse(status=204)
 
