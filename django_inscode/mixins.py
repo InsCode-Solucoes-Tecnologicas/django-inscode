@@ -2,7 +2,7 @@ from math import ceil
 from typing import TYPE_CHECKING, Any, ClassVar, cast
 
 from django.db.models import Model, QuerySet
-from django.http import HttpRequest, JsonResponse
+from django.http import HttpRequest, HttpResponse, JsonResponse
 from django_filters import FilterSet
 
 if TYPE_CHECKING:
@@ -409,6 +409,17 @@ class ViewDeleteModelMixin:
         return JsonResponse({}, status=204)
 
 
+class ViewNoContentMixin:
+    """
+    Mixin para views orquestradoras que não têm o que devolver.
+
+    Responde `204 No Content` sem corpo, descartando o retorno do service.
+    """
+
+    def build_response(self, result: Any) -> HttpResponse:
+        return HttpResponse(status=204)
+
+
 __all__ = [
     "ServiceCreateMixin",
     "ServiceReadMixin",
@@ -418,4 +429,5 @@ __all__ = [
     "ViewRetrieveModelMixin",
     "ViewUpdateModelMixin",
     "ViewDeleteModelMixin",
+    "ViewNoContentMixin",
 ]

@@ -4,7 +4,7 @@ from django.conf import settings
 from django.contrib.auth.models import AnonymousUser
 from django.core.exceptions import ImproperlyConfigured
 from django.db.models import Model
-from django.http import HttpRequest, JsonResponse
+from django.http import HttpRequest, HttpResponse, JsonResponse
 from django.utils.module_loading import import_string
 from django.views import View
 
@@ -343,7 +343,7 @@ class GenericOrchestratorView(GenericView):
         permissions_classes (list[type[BasePermission]]): Lista de classes de permissão.
         fields (list[str]): Lista de campos permitidos na view.
         serializer (type[Schema] | None): Schema marshmallow opcional para serializar
-            o dict retornado pelo `OrchestratorService.execute`. Se omitido, o dict é
+            o retorno de `OrchestratorService.execute`. Se omitido, o retorno é
             devolvido como veio.
     """
 
@@ -353,13 +353,17 @@ class GenericOrchestratorView(GenericView):
     def get_service(self) -> OrchestratorService:
         return cast(OrchestratorService, super().get_service())
 
-    def serialize_result(self, result: dict[str, Any]) -> dict[str, Any]:
-        """Aplica o `serializer` ao dict de saída, se houver."""
+    def serialize_result(self, result: Any) -> Any:
+        """Aplica o `serializer` ao retorno do service, se houver."""
         if self.serializer is None:
             return result
         return SerializerFactory.get_serializer(self.serializer).serialize(result)
 
-    def execute(self, request: HttpRequest, *args, **kwargs) -> JsonResponse:
+    def build_response(self, result: Any) -> HttpResponse:
+        """Monta a resposta HTTP a partir do retorno de `OrchestratorService.execute`."""
+        return JsonResponse(self.serialize_result(result), status=200)
+
+    def execute(self, request: HttpRequest, *args, **kwargs) -> HttpResponse:
         """
         Método principal para executar a lógica orquestrada delegada ao serviço orquestrador.
 
@@ -369,7 +373,7 @@ class GenericOrchestratorView(GenericView):
             **kwargs: Argumentos nomeados adicionais.
 
         Returns:
-            JsonResponse: Resposta JSON contendo o resultado da operação.
+            HttpResponse: Resposta montada por `build_response` a partir do resultado.
 
         Raises:
             exceptions.BadRequest: Se os dados enviados forem inválidos.
@@ -384,7 +388,7 @@ class GenericOrchestratorView(GenericView):
             *args, data=data, request=request, context=context, **kwargs
         )
 
-        return JsonResponse(self.serialize_result(result), status=200)
+        return self.build_response(result)
 
 
 class GenericModelView[T: Model](GenericView):
