@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import warnings
+from collections.abc import Iterable
 from typing import Any
 
 from django.conf import settings
@@ -15,7 +17,8 @@ SecurityScheme = dict[str, Any]
 SecurityRequirement = dict[str, list[str]]
 
 
-_REGISTRY: dict[type[BaseAuthentication], tuple[str, SecurityScheme]] = {}
+_REGISTRY: dict[type[BaseAuthentication], tuple[tuple[str, SecurityScheme], ...]] = {}
+_WARNED: set[type[BaseAuthentication]] = set()
 
 
 def register_security_scheme(
@@ -27,17 +30,30 @@ def register_security_scheme(
     """
     Associa uma classe `BaseAuthentication` a um Security Scheme OpenAPI.
 
+    Registrar mais de um scheme para a mesma classe significa que todos são
+    exigidos juntos (`AND`), na ordem de registro.
+
     Args:
         auth_class: classe (ou base) a ser detectada nas views.
         name: identificador do scheme em `components.securitySchemes`.
-        scheme: objeto Security Scheme (https://spec.openapis.org/oas/v3.0.3#security-scheme-object).
+        scheme: objeto Security Scheme (https://spec.openapis.org/oas/v3.1.0#security-scheme-object).
     """
-    _REGISTRY[auth_class] = (name, scheme)
+    current = _REGISTRY.get(auth_class, ())
+    _REGISTRY[auth_class] = (*(s for s in current if s[0] != name), (name, scheme))
 
 
 def registered_schemes() -> dict[str, SecurityScheme]:
-    """Devolve o mapa nome → scheme para registro em `components.securitySchemes`."""
-    return {name: scheme for name, scheme in _REGISTRY.values()}
+    """Devolve o mapa nome → scheme de todos os schemes registrados."""
+    return {name: scheme for schemes in _REGISTRY.values() for name, scheme in schemes}
+
+
+def _schemes_for(
+    auth_class: type[BaseAuthentication],
+) -> tuple[tuple[str, SecurityScheme], ...] | None:
+    for registered_class in auth_class.__mro__:
+        if registered_class in _REGISTRY:
+            return _REGISTRY[registered_class]
+    return None
 
 
 def _resolve_auth_classes(view_class: type[View]) -> list[type[BaseAuthentication]]:
@@ -45,42 +61,66 @@ def _resolve_auth_classes(view_class: type[View]) -> list[type[BaseAuthenticatio
     Resolve as classes de autenticação ativas em uma view.
 
     Replica a lógica de `GenericView.__init__`: usa `authentication_classes` se
-    definida, senão recorre a `settings.DEFAULT_AUTHENTICATION_CLASSES`.
+    declarada (`[]` inclusive), senão recorre a `settings.DEFAULT_AUTHENTICATION_CLASSES`.
     """
-    declared: list[type[BaseAuthentication]] = list(
-        getattr(view_class, "authentication_classes", []) or []
+    declared: list[type[BaseAuthentication]] | None = getattr(
+        view_class, "authentication_classes", None
     )
-    if declared:
-        return declared
+    if declared is not None:
+        return list(declared)
+    return default_authentication_classes()
 
+
+def default_authentication_classes() -> list[type[BaseAuthentication]]:
     paths: list[str] = list(getattr(settings, "DEFAULT_AUTHENTICATION_CLASSES", []))
     return [import_string(path) for path in paths]
+
+
+def security_for_auth_classes(
+    auth_classes: Iterable[type[BaseAuthentication]],
+) -> list[SecurityRequirement]:
+    """
+    Converte classes de autenticação em Security Requirements.
+
+    Cada classe vira uma alternativa (`OR`), na ordem declarada. Classes sem
+    scheme registrado são ignoradas com um aviso.
+    """
+    requirements: list[SecurityRequirement] = []
+    seen: set[tuple[str, ...]] = set()
+
+    for auth_class in auth_classes:
+        schemes = _schemes_for(auth_class)
+        if schemes is None:
+            if auth_class not in _WARNED:
+                _WARNED.add(auth_class)
+                warnings.warn(
+                    f"{auth_class.__module__}.{auth_class.__qualname__} não tem "
+                    "security scheme registrado e foi omitida da spec OpenAPI. "
+                    "Use django_inscode.openapi.register_security_scheme().",
+                    stacklevel=2,
+                )
+            continue
+        key = tuple(name for name, _ in schemes)
+        if key in seen:
+            continue
+        seen.add(key)
+        requirements.append({name: [] for name in key})
+
+    return requirements
 
 
 def security_for_view(view_class: type[View]) -> list[SecurityRequirement]:
     """
     Devolve a lista de Security Requirements para uma view.
 
-    Lista vazia → endpoint público. Múltiplos schemes resolvem como `OR`
-    (qualquer um satisfaz).
+    Lista vazia → endpoint público.
     """
-    requirements: list[SecurityRequirement] = []
-    seen: set[str] = set()
+    return security_for_auth_classes(_resolve_auth_classes(view_class))
 
-    for auth_class in _resolve_auth_classes(view_class):
-        for registered_class, (name, _) in _REGISTRY.items():
-            if not (
-                auth_class is registered_class
-                or issubclass(auth_class, registered_class)
-            ):
-                continue
-            if name in seen:
-                continue
-            requirements.append({name: []})
-            seen.add(name)
-            break
 
-    return requirements
+def default_security() -> list[SecurityRequirement]:
+    """Security Requirements de `settings.DEFAULT_AUTHENTICATION_CLASSES`."""
+    return security_for_auth_classes(default_authentication_classes())
 
 
 register_security_scheme(
@@ -100,5 +140,7 @@ __all__ = [
     "SecurityRequirement",
     "register_security_scheme",
     "registered_schemes",
+    "security_for_auth_classes",
     "security_for_view",
+    "default_security",
 ]

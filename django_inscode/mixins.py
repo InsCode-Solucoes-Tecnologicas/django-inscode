@@ -2,13 +2,15 @@ from math import ceil
 from typing import TYPE_CHECKING, Any, ClassVar, cast
 
 from django.db.models import Model, QuerySet
-from django.http import HttpRequest, JsonResponse
+from django.http import HttpRequest, HttpResponse, JsonResponse
 from django_filters import FilterSet
 
 if TYPE_CHECKING:
     from django_inscode.services import GenericModelService
 
 from . import exceptions, settings
+from .utils import marshmallow as schema_utils
+from .metadata import metadata
 from .types import Context, Data, Id
 
 
@@ -130,6 +132,9 @@ class ViewCreateModelMixin:
         post: Processa requisições POST para criar uma nova instância.
     """
 
+    @metadata(
+        {"openapi": {"responses": [{"status_code": 201, "description": "Criado."}]}}
+    )
     def post(self, request: HttpRequest, *args, **kwargs) -> JsonResponse:
         """
         Processa requisições POST para criar uma nova instância.
@@ -145,7 +150,7 @@ class ViewCreateModelMixin:
         """
         data = request.data
 
-        self.verify_fields(data, request)
+        self.verify_fields(data)
 
         context = self.get_context(request)
         obj = self.service.perform_action("create", data=data, context=context)
@@ -281,6 +286,7 @@ class ViewRetrieveModelMixin:
 
         return JsonResponse(response_data, status=200)
 
+    @metadata({"openapi": {"responses": [{"status_code": 200, "description": "OK."}]}})
     def get(self, request: HttpRequest, *args, **kwargs) -> JsonResponse:
         """
         Decide entre `retrieve` ou `list` com base na presença de um identificador.
@@ -339,6 +345,7 @@ class ViewUpdateModelMixin:
 
         return JsonResponse(serialized_obj, status=200)
 
+    @metadata({"openapi": {"responses": [{"status_code": 200, "description": "OK."}]}})
     def patch(self, request: HttpRequest, *args, **kwargs) -> JsonResponse:
         """
         Atualiza parcialmente uma instância do modelo (requisição PATCH).
@@ -352,9 +359,14 @@ class ViewUpdateModelMixin:
             JsonResponse: Resposta JSON contendo os dados da instância atualizada.
         """
         data = request.data
-        self.verify_fields(data, request)
+        if self.input_schema is not None:
+            updatable = schema_utils.get_updatable_fields(self.input_schema())
+            for key in set(data) - updatable:
+                del data[key]
+        self.verify_fields(data, partial=True)
         return self._update(request, *args, **kwargs)
 
+    @metadata({"openapi": {"responses": [{"status_code": 200, "description": "OK."}]}})
     def put(self, request: HttpRequest, *args, **kwargs) -> JsonResponse:
         """
         Atualiza completamente uma instância do modelo (requisição PUT).
@@ -371,7 +383,7 @@ class ViewUpdateModelMixin:
             exceptions.BadRequest: Se os campos obrigatórios não forem fornecidos ou forem inválidos.
         """
         data = request.data
-        self.verify_fields(data, request)
+        self.verify_fields(data)
         return self._update(request, *args, **kwargs)
 
 
@@ -383,6 +395,15 @@ class ViewDeleteModelMixin:
        delete: Exclui uma instância do modelo pelo ID.
     """
 
+    @metadata(
+        {
+            "openapi": {
+                "responses": [
+                    {"status_code": 204, "description": "Sem conteúdo.", "schema": None}
+                ]
+            }
+        }
+    )
     def delete(self, request: HttpRequest, *args, **kwargs) -> JsonResponse:
         """
         Exclui uma instância do modelo pelo ID.
@@ -409,6 +430,26 @@ class ViewDeleteModelMixin:
         return JsonResponse({}, status=204)
 
 
+class ViewNoContentMixin:
+    """
+    Mixin para views orquestradoras que não têm o que devolver.
+
+    Responde `204 No Content` sem corpo, descartando o retorno do service.
+    """
+
+    @metadata(
+        {
+            "openapi": {
+                "responses": [
+                    {"status_code": 204, "description": "Sem conteúdo.", "schema": None}
+                ]
+            }
+        }
+    )
+    def build_response(self, result: Any) -> HttpResponse:
+        return HttpResponse(status=204)
+
+
 __all__ = [
     "ServiceCreateMixin",
     "ServiceReadMixin",
@@ -418,4 +459,5 @@ __all__ = [
     "ViewRetrieveModelMixin",
     "ViewUpdateModelMixin",
     "ViewDeleteModelMixin",
+    "ViewNoContentMixin",
 ]

@@ -4,17 +4,17 @@ from django.conf import settings
 from django.contrib.auth.models import AnonymousUser
 from django.core.exceptions import ImproperlyConfigured
 from django.db.models import Model
-from django.http import HttpRequest, JsonResponse
+from django.http import HttpRequest, HttpResponse, JsonResponse
 from django.utils.module_loading import import_string
 from django.views import View
 
-from django_inscode.utils import marshmallow as schema_utils
 
 from . import exceptions, mixins
 from .authentication import BaseAuthentication
 from .permissions import BasePermission
 from .serializers import SerializerFactory, SerializerInterface
 from .services import GenericModelService, OrchestratorService
+from .metadata import metadata
 from .types import Context, Data
 
 try:
@@ -42,6 +42,9 @@ class GenericView(View):
         fields (list[str]): Lista de campos permitidos na view (validação simples).
         input_schema (type[Schema] | None): Schema marshmallow para validação de entrada.
             Se definido, tem prioridade sobre o campo 'fields'.
+        authentication_classes (list[type[BaseAuthentication]] | None): Classes de
+            autenticação. Se omitido, usa `settings.DEFAULT_AUTHENTICATION_CLASSES`;
+            `[]` dispensa autenticação.
     """
 
     service: ClassVar[Service] = cast(Service, None)
@@ -49,7 +52,7 @@ class GenericView(View):
         list[type[BasePermission]], None
     )
     fields: ClassVar[set[str]] = set()
-    authentication_classes: ClassVar[list[type[BaseAuthentication]]] = []
+    authentication_classes: ClassVar[list[type[BaseAuthentication]] | None] = None
     input_schema: ClassVar[type[Schema] | None] = None
 
     def __init__(self, **kwargs) -> None:
@@ -62,7 +65,7 @@ class GenericView(View):
         super().__init__(**kwargs)
         self._validate_required_attributes()
 
-        if not self.authentication_classes:
+        if self.authentication_classes is None:
             self.authentication_classes = self.get_default_authentication_classes()
 
     @staticmethod
@@ -82,7 +85,7 @@ class GenericView(View):
         """
         request.user = AnonymousUser()
 
-        for authenticator_class in self.authentication_classes:
+        for authenticator_class in self.authentication_classes or []:
             authenticator = authenticator_class()
             try:
                 user = authenticator.authenticate(request)
@@ -203,35 +206,29 @@ class GenericView(View):
         """
         return self.fields or set()
 
-    def verify_fields(self, data: Data, request: HttpRequest | None = None) -> None:
+    def verify_fields(self, data: Data, partial: bool = False) -> None:
         """
         Verifica se todos os campos obrigatórios estão presentes nos dados.
 
         Se input_schema estiver definido, usa validação marshmallow.
-        Para PATCH, permite validação parcial (partial=True).
         Caso contrário, usa validação simples de campos.
 
         Args:
             data: Dados a serem validados
-            request: HttpRequest para detectar método HTTP (opcional para backward compatibility)
+            partial: Se nenhum campo é obrigatório
         """
         if self.input_schema is not None:
-            self._validate_with_schema(data, request)
-        else:
-            if not (request and request.method == "PATCH"):
-                self._validate_simple_fields(data)
+            self._validate_with_schema(data, partial)
+        elif not partial:
+            self._validate_simple_fields(data)
 
-    def _validate_with_schema(
-        self, data: Data, request: HttpRequest | None = None
-    ) -> None:
+    def _validate_with_schema(self, data: Data, partial: bool = False) -> None:
         """
         Valida os dados usando o schema marshmallow definido.
 
-        Para PATCH, usa partial=True para permitir validação parcial.
-
         Args:
             data: Dados a serem validados
-            request: HttpRequest para detectar método HTTP
+            partial: Se nenhum campo é obrigatório
 
         Raises:
             exceptions.BadRequest: Se a validação falhar
@@ -243,22 +240,8 @@ class GenericView(View):
             )
 
         try:
-            is_patch = request is not None and request.method == "PATCH"
-
             assert self.input_schema is not None
-            schema = self.input_schema()
-            validated_data = (
-                schema.load(
-                    {
-                        k: v
-                        for k, v in data.items()
-                        if k in schema_utils.get_updatable_fields(schema)
-                    },
-                    partial=True,
-                )
-                if is_patch
-                else schema.load(data)
-            )
+            validated_data = self.input_schema().load(data, partial=partial)
 
             data.clear()
             data.update(validated_data)
@@ -340,7 +323,7 @@ class GenericOrchestratorView(GenericView):
         permissions_classes (list[type[BasePermission]]): Lista de classes de permissão.
         fields (list[str]): Lista de campos permitidos na view.
         serializer (type[Schema] | None): Schema marshmallow opcional para serializar
-            o dict retornado pelo `OrchestratorService.execute`. Se omitido, o dict é
+            o retorno de `OrchestratorService.execute`. Se omitido, o retorno é
             devolvido como veio.
     """
 
@@ -350,13 +333,18 @@ class GenericOrchestratorView(GenericView):
     def get_service(self) -> OrchestratorService:
         return cast(OrchestratorService, super().get_service())
 
-    def serialize_result(self, result: dict[str, Any]) -> dict[str, Any]:
-        """Aplica o `serializer` ao dict de saída, se houver."""
+    def serialize_result(self, result: Any) -> Any:
+        """Aplica o `serializer` ao retorno do service, se houver."""
         if self.serializer is None:
             return result
         return SerializerFactory.get_serializer(self.serializer).serialize(result)
 
-    def execute(self, request: HttpRequest, *args, **kwargs) -> JsonResponse:
+    @metadata({"openapi": {"responses": [{"status_code": 200, "description": "OK."}]}})
+    def build_response(self, result: Any) -> HttpResponse:
+        """Monta a resposta HTTP a partir do retorno de `OrchestratorService.execute`."""
+        return JsonResponse(self.serialize_result(result), status=200)
+
+    def execute(self, request: HttpRequest, *args, **kwargs) -> HttpResponse:
         """
         Método principal para executar a lógica orquestrada delegada ao serviço orquestrador.
 
@@ -366,14 +354,14 @@ class GenericOrchestratorView(GenericView):
             **kwargs: Argumentos nomeados adicionais.
 
         Returns:
-            JsonResponse: Resposta JSON contendo o resultado da operação.
+            HttpResponse: Resposta montada por `build_response` a partir do resultado.
 
         Raises:
             exceptions.BadRequest: Se os dados enviados forem inválidos.
             exceptions.Forbidden: Se as permissões forem negadas.
         """
         data = request.data
-        self.verify_fields(data, request)
+        self.verify_fields(data)
         context = self.get_context(request)
         service = self.get_service()
 
@@ -381,7 +369,7 @@ class GenericOrchestratorView(GenericView):
             *args, data=data, request=request, context=context, **kwargs
         )
 
-        return JsonResponse(self.serialize_result(result), status=200)
+        return self.build_response(result)
 
 
 class GenericModelView[T: Model](GenericView):

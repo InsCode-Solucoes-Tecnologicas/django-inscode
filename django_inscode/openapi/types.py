@@ -1,14 +1,12 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any, Literal
+from typing import Any
 
 from django.views import View
 from marshmallow import Schema
 
-HttpMethod = Literal["get", "post", "put", "patch", "delete"]
-
-ParameterLocation = Literal["path", "query", "header", "cookie"]
+from django_inscode.types import HttpMethod, ParameterLocation
 
 
 @dataclass(frozen=True, slots=True)
@@ -66,6 +64,7 @@ class OperationSpec:
     request_body: RequestBodySpec | None = None
     responses: list[ResponseSpec] = field(default_factory=list)
     extra_schemas: tuple[type[Schema], ...] = ()
+    extra_components: dict[str, dict[str, Any]] = field(default_factory=dict)
     security: list[dict[str, list[str]]] = field(default_factory=list)
 
 
