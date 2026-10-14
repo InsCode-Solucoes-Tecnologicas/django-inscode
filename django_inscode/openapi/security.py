@@ -45,13 +45,13 @@ def _resolve_auth_classes(view_class: type[View]) -> list[type[BaseAuthenticatio
     Resolve as classes de autenticação ativas em uma view.
 
     Replica a lógica de `GenericView.__init__`: usa `authentication_classes` se
-    definida, senão recorre a `settings.DEFAULT_AUTHENTICATION_CLASSES`.
+    declarada (`[]` inclusive), senão recorre a `settings.DEFAULT_AUTHENTICATION_CLASSES`.
     """
-    declared: list[type[BaseAuthentication]] = list(
-        getattr(view_class, "authentication_classes", []) or []
+    declared: list[type[BaseAuthentication]] | None = getattr(
+        view_class, "authentication_classes", None
     )
-    if declared:
-        return declared
+    if declared is not None:
+        return list(declared)
 
     paths: list[str] = list(getattr(settings, "DEFAULT_AUTHENTICATION_CLASSES", []))
     return [import_string(path) for path in paths]

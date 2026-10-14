@@ -42,6 +42,9 @@ class GenericView(View):
         fields (list[str]): Lista de campos permitidos na view (validação simples).
         input_schema (type[Schema] | None): Schema marshmallow para validação de entrada.
             Se definido, tem prioridade sobre o campo 'fields'.
+        authentication_classes (list[type[BaseAuthentication]] | None): Classes de
+            autenticação. Se omitido, usa `settings.DEFAULT_AUTHENTICATION_CLASSES`;
+            `[]` dispensa autenticação.
     """
 
     service: ClassVar[Service] = cast(Service, None)
@@ -49,7 +52,7 @@ class GenericView(View):
         list[type[BasePermission]], None
     )
     fields: ClassVar[set[str]] = set()
-    authentication_classes: ClassVar[list[type[BaseAuthentication]]] = []
+    authentication_classes: ClassVar[list[type[BaseAuthentication]] | None] = None
     input_schema: ClassVar[type[Schema] | None] = None
 
     def __init__(self, **kwargs) -> None:
@@ -62,7 +65,7 @@ class GenericView(View):
         super().__init__(**kwargs)
         self._validate_required_attributes()
 
-        if not self.authentication_classes:
+        if self.authentication_classes is None:
             self.authentication_classes = self.get_default_authentication_classes()
 
     @staticmethod
@@ -82,7 +85,7 @@ class GenericView(View):
         """
         request.user = AnonymousUser()
 
-        for authenticator_class in self.authentication_classes:
+        for authenticator_class in self.authentication_classes or []:
             authenticator = authenticator_class()
             try:
                 user = authenticator.authenticate(request)
