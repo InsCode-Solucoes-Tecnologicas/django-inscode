@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, cast
+from typing import Any, TypeGuard, cast
 
 from marshmallow import Schema
 
@@ -44,7 +44,7 @@ _ERROR_DESCRIPTIONS = {
 }
 
 
-def _is_marshmallow_schema(value: object) -> bool:
+def _is_marshmallow_schema(value: object) -> TypeGuard[type[Schema]]:
     return isinstance(value, type) and issubclass(value, Schema)
 
 
@@ -66,12 +66,12 @@ def _operation_id(route: CollectedRoute, method: HttpMethod, suffix: str) -> str
 
 def _serializer_schema(view_class: type[GenericModelView]) -> type[Schema] | None:
     serializer = view_class.serializer
-    return cast(type[Schema], serializer) if _is_marshmallow_schema(serializer) else None
+    return serializer if _is_marshmallow_schema(serializer) else None
 
 
 def _input_schema(view_class: type) -> type[Schema] | None:
     schema = getattr(view_class, "input_schema", None)
-    return cast(type[Schema], schema) if _is_marshmallow_schema(schema) else None
+    return schema if _is_marshmallow_schema(schema) else None
 
 
 def default_error_responses(
@@ -292,7 +292,7 @@ def _orchestrator_output_schema(
     view_class: type[GenericOrchestratorView],
 ) -> type[Schema] | None:
     serializer = getattr(view_class, "serializer", None)
-    return cast(type[Schema], serializer) if _is_marshmallow_schema(serializer) else None
+    return serializer if _is_marshmallow_schema(serializer) else None
 
 
 def _orchestrator_operations(
